@@ -1,1 +1,1 @@
-# File structure for frontend react app.
+File structure for frontend react app.
