@@ -9,6 +9,24 @@
 
 <br/>
 
+## How To Run
+
+```bash
+npm install
+```
+
+Then, run the development server:
+
+```bash
+npm run dev
+```
+
+If this doesn't work run
+
+```bash
+npm install -g pnpm
+```
+
 ## Introduction
 
 This is a hybrid Next.js + Python app that uses Next.js as the frontend and Flask as the API backend. One great use case of this is to write Next.js apps that use Python AI libraries on the backend.
