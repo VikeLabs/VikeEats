@@ -12,6 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 from flask import Blueprint
+from datetime import datetime
 # from flask_cors import CORS
 
 food_outlets_blueprint = Blueprint('food_outlets', __name__)
@@ -46,11 +47,12 @@ def clean_text(tag):
     return text_list
 
 def clean_time_format(time_string):
+    pass
     # Regex to find the gap between the time and the am/pm part
-    pattern = re.compile(r'(?<=\d{1,2}[: ]?\d{0,2})\s(?=am|pm)')
-    # Substitute the space with an empty string to remove it
-    corrected_time_string = re.sub(pattern, '', time_string)
-    return corrected_time_string
+    # pattern = re.compile(r'(?<=\d{1,2}[: ]?\d{0,2})\s(?=am|pm)')
+    # # Substitute the space with an empty string to remove it
+    # corrected_time_string = re.sub(pattern, '', time_string)
+    # return corrected_time_string
 
 def parse(soup):
 
@@ -88,18 +90,74 @@ def parse(soup):
 
                         outlet_name = clean_text(cols[0])
                         # outlet_name = outlet_name.split('\n')
+                        # print(f"outlet_name {outlet_name}")
                         
                         hours = clean_text(cols[1])
+                        # hours = 
+                        # print(f"hours {hours}")
                         # hours = hours.split('\n')
 
 
                         
 
                         food_outlets[header_name].update(dict(zip(outlet_name, hours))) #adds the outlet name and hours to the dictionary
+                        # print(f"food_outlets: {food_outlets}")
+
+    #process hours into date time objects
+    for day_range in food_outlets:
+        for outlet, time_range in food_outlets[day_range].items():
+            # food_outlets[day_range][outlet] = turn_to_datetime(time_range)
+            print(f"food_outlets: {outlet}: {food_outlets[day_range][outlet]}")
+
+    # parsed_outlets = {}
+    # for day_range, outlets in food_outlets.items():
+    #     parsed_outlets[day_range] = {}
+    #     for outlet, hours in outlets.items():
+    #         parsed_outlets[day_range][outlet] = turn_to_datetime(hours)
 
     return food_outlets
 
     
+from datetime import datetime
+
+from datetime import datetime
+
+#currently doesnt work quite right
+def turn_to_datetime(time_range):
+    print("about to error on time_range: ", time_range)
+
+    if time_range == "Closed": # Handle closed outlets
+        return None
+    
+    # Split by comma to handle multiple ranges
+    range_groups = time_range.split(',')  # e.g., "11am-2pm, 5pm-7:30pm" -> ["11am-2pm", "5pm-7:30pm"]
+    all_ranges = []
+
+    for group in range_groups:
+        ranges = group.strip().split('-')  # Split each range on "-"
+        if len(ranges) != 2:
+            raise ValueError(f"Invalid time range format: {group}")
+        
+        processed_range = []
+        for time in ranges:
+            time = time.replace("\u00a0", "").strip().upper()  # Normalize and clean up
+            time = time.replace(':AM', 'AM').replace(':PM', 'PM')  # Fix incorrect colon usage
+            
+            if not any(char in time for char in [':', 'AM', 'PM']):
+                raise ValueError(f"Invalid time format: {time}")
+
+            if ':' not in time:
+                time = time[:-2] + ':00' + time[-2:]  # Add ':00' for missing minutes
+            
+            try:
+                parsed_time = datetime.strptime(time, "%I:%M%p").time()
+                processed_range.append(parsed_time)
+            except ValueError:
+                raise ValueError(f"Invalid time format: {time}")
+
+        all_ranges.append(tuple(processed_range))
+
+    return all_ranges  # Returns a list of time tuples
 
 
 def is_within_date_range(current_date, food_outlets):
