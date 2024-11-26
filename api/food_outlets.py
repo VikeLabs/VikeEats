@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from flask import Blueprint
 from datetime import datetime
+import copy
 # from flask_cors import CORS
 
 food_outlets_blueprint = Blueprint('food_outlets', __name__)
@@ -104,10 +105,12 @@ def parse(soup):
                         # print(f"food_outlets: {food_outlets}")
 
     #process hours into date time objects
+    time_ranges = copy.deepcopy(food_outlets)
     for day_range in food_outlets:
         for outlet, time_range in food_outlets[day_range].items():
-            # food_outlets[day_range][outlet] = turn_to_datetime(time_range)
-            print(f"food_outlets: {outlet}: {food_outlets[day_range][outlet]}")
+            time_ranges[day_range][outlet] = turn_to_datetime(time_range)
+            print(f"food_outlets: {outlet}: {time_ranges[day_range][outlet]}")
+    print("SUCCESS\n\n")
 
     # parsed_outlets = {}
     # for day_range, outlets in food_outlets.items():
@@ -124,25 +127,35 @@ from datetime import datetime
 
 #currently doesnt work quite right
 def turn_to_datetime(time_range):
-    print("about to error on time_range: ", time_range)
-
-    if time_range == "Closed": # Handle closed outlets
-        return None
-    
+    # print("about to error on time_range: ", time_range)
     # Split by comma to handle multiple ranges
-    range_groups = time_range.split(',')  # e.g., "11am-2pm, 5pm-7:30pm" -> ["11am-2pm", "5pm-7:30pm"]
+    if time_range == "Closed":
+        return None
+    range_groups = time_range.split(',')  # e.g., "11am-2pm, 5pm-10-pm" -> ["11am-2pm", "5pm-10-pm"]
     all_ranges = []
 
     for group in range_groups:
-        ranges = group.strip().split('-')  # Split each range on "-"
-        if len(ranges) != 2:
+        ranges = group.strip().split('-')
+        
+        # Merge improperly split parts like "10" and "pm" in "10-pm"
+        normalized_ranges = []
+        i = 0
+        while i < len(ranges):
+            if i + 1 < len(ranges) and (ranges[i+1].strip().upper() in ["AM", "PM"] or ranges[i+1].strip().endswith(("AM", "PM"))):
+                normalized_ranges.append(ranges[i] + ranges[i+1])
+                i += 2
+            else:
+                normalized_ranges.append(ranges[i])
+                i += 1
+        
+        if len(normalized_ranges) != 2:
             raise ValueError(f"Invalid time range format: {group}")
         
         processed_range = []
-        for time in ranges:
+        for time in normalized_ranges:
             time = time.replace("\u00a0", "").strip().upper()  # Normalize and clean up
             time = time.replace(':AM', 'AM').replace(':PM', 'PM')  # Fix incorrect colon usage
-            
+
             if not any(char in time for char in [':', 'AM', 'PM']):
                 raise ValueError(f"Invalid time format: {time}")
 
