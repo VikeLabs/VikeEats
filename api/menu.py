@@ -10,23 +10,56 @@ def menu_home():
     # return url_for('menu.cove_menu'), url_for('menu.mystic_menu')
     return "Welcome to the menu page <br>" + "<br>Cove Menu: " + url_for('menu.cove_menu') + "<br>Mystic Menu: " + url_for('menu.mystic_menu')
 
-@menu_blueprint.route('/menu/cove')
-def cove_menu():
+@menu_blueprint.route('/menu/cove/greens')
+def greens_menu():
+    return cove_menu('tabs-greens')
+    
+@menu_blueprint.route('/menu/cove/deli')
+def deli_menu():
+    return cove_menu('tabs-deli')
+
+@menu_blueprint.route('/menu/cove/shawarma')
+def shawarma_menu():
+    return cove_menu('tabs-shawarma')
+
+@menu_blueprint.route('/menu/cove/asian-fusion')
+def asian_fusion_menu():
+    return cove_menu('tabs-asian-fusion')
+
+@menu_blueprint.route('/menu/cove/pizza')
+def pizza_menu():
+    return cove_menu('tabs-pizza')
+
+@menu_blueprint.route('/menu/cove/grill')
+def grill_menu():
+    return cove_menu('tabs-grill')
+
+@menu_blueprint.route('/menu/cove/entre')
+def entre_menu():
+    return cove_menu('tabs-entre')
+
+@menu_blueprint.route('/menu/cove/bread')
+def bread_menu():
+    return cove_menu('tabs-bread')
+
+@menu_blueprint.route('/menu/cove/halal')
+def halal_menu():
+    return cove_menu('tabs-halal')
+
+
+def cove_menu(location):
     #TODO: Implement this function
 
     #get webpage and check its 200 ok
-
+    r = requests.get("https://www.uvic.ca/services/food/where/thecove/index.php")
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to retrieve page"}), 500
+    
     #extract the menu items from the webpage
+    soup = BeautifulSoup(r.content, 'html.parser')
+    menu_items = parse(soup, location)
 
     #return the menu items as json
-
-    #sample menu items feel free to delete
-    menu_items = [
-        {"name": "Cove Burger", "price": 9.99, "category": "Main Course"},
-        {"name": "Cove Fries", "price": 3.99, "category": "Sides"},
-        {"name": "Cove Coke", "price": 1.99, "category": "Drinks"},
-        {"name": "Cove Salad", "price": 4.99, "category": "Appetizers"},
-    ]
     return jsonify(menu_items)
 
 #return json for different mystic locations
@@ -107,8 +140,15 @@ def parse(soup, location):
                     allergens = tag_text
 
             #get rid of "ingredients" and "contains" labels, and remove weird characters
-            ingredients = ingredients.replace('\u00a0', ' ').split(': ')[1]
-            allergens = allergens.replace('\u00a0', ' ').split(': ')[1]
+            if ingredients == 'Ingredients:':
+                ingredients = ''
+            else:
+                ingredients = ingredients.replace('\u00a0', ' ').split(': ')[1]
+            
+            if allergens == 'Contains:':
+                allergens = ''
+            else:
+                allergens = allergens.replace('\u00a0', ' ').split(': ')[1]
 
             #add data to dictionary for that menu item
             menu_item_dict = {}
