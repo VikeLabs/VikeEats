@@ -114,7 +114,7 @@ def parse(soup, location):
             menu_item_dict = {}
             menu_item_dict['dietary restrictions'] = dietary_restrictions
             menu_item_dict['ingredients'] = ingredients
-            menu_item_dict['allergens'] = allergens\
+            menu_item_dict['allergens'] = allergens
                 
             #add to the category dictionary
             category_dict[item.string] = menu_item_dict
