@@ -100,6 +100,58 @@ def mystic_menu(location):
     #return the menu items as json
     return jsonify(menu_items)
 
+
+@menu_blueprint.route('/menu/bibliocafe')
+def biblio_menu():
+    #get webpage and check its 200 ok
+    r = requests.get("https://www.uvic.ca/services/food/where/bibliocafe/index.php")
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to retrieve page"}), 500
+    
+    #extract the menu items from the webpage
+    soup = BeautifulSoup(r.content, 'html.parser')
+    menu_items = parse_list(soup)
+    return jsonify(menu_items)
+
+
+@menu_blueprint.route('/menu/arts-place')
+def arts_place_menu():
+    #get webpage and check its 200 ok
+    r = requests.get("https://www.uvic.ca/services/food/where/artsplace/index.php")
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to retrieve page"}), 500
+    
+    #extract the menu items from the webpage
+    soup = BeautifulSoup(r.content, 'html.parser')
+    menu_items = parse_list(soup)
+    return jsonify(menu_items)
+    
+
+@menu_blueprint.route('/menu/nibbles-and-bytes')
+def nibbles_and_bytes_menu():
+    #get webpage and check its 200 ok
+    r = requests.get("https://www.uvic.ca/services/food/where/nibblesbytes/index.php")
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to retrieve page"}), 500
+    
+    #extract the menu items from the webpage
+    soup = BeautifulSoup(r.content, 'html.parser')
+    menu_items = parse_list(soup)
+    return jsonify(menu_items)
+
+
+@menu_blueprint.route('/menu/sci-cafe')
+def sci_cafe_menu():
+    #get webpage and check its 200 ok
+    r = requests.get("https://www.uvic.ca/services/food/where/scicafe/index.php")
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to retrieve page"}), 500
+    
+    #extract the menu items from the webpage
+    soup = BeautifulSoup(r.content, 'html.parser')
+    menu_items = parse_list(soup)
+    return jsonify(menu_items)
+
 def parse(soup, location):
     dict = {}
 
@@ -172,7 +224,7 @@ def parse(soup, location):
             menu_item_dict = {}
             menu_item_dict['dietary restrictions'] = dietary_restrictions
             menu_item_dict['ingredients'] = ingredients
-            menu_item_dict['allergens'] = allergens\
+            menu_item_dict['allergens'] = allergens
                 
             #add to the category dictionary
             category_dict[item.string] = menu_item_dict
@@ -260,3 +312,15 @@ def parse_cove_alt(soup, location):
         #add to the main dictionary 
         dict[category.string] = menu_item_dict
     return dict
+
+def parse_list(soup):
+    menu_items = []
+    page_content = soup.find(id='content')
+    lst = page_content.find('ul', recursive=False)
+    items = lst.find_all('li', recursive=False) #get the list of menu items
+    
+    for item in items:
+        item_str = item.string.replace('\u00a0', ' ') #remove weird characters
+        menu_items.append(item_str)
+
+    return menu_items
