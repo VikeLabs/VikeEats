@@ -57,7 +57,10 @@ def cove_menu(location):
     
     #extract the menu items from the webpage
     soup = BeautifulSoup(r.content, 'html.parser')
-    menu_items = parse(soup, location)
+    if location == 'tabs-asian-fusion' or location == 'tabs-bread' or location == 'tabs-halal':
+        menu_items = parse_cove_alt(soup, location)
+    else:
+        menu_items = parse(soup, location)
 
     #return the menu items as json
     return jsonify(menu_items)
@@ -130,9 +133,20 @@ def parse(soup, location):
 
             #get ingredients and allergens
             p_tags = item_div.find_all('p')
+            # Div tag is used because one of the food items in entre has info kept in a div and not p
+            div_tags = item_div.find_all('div')
+
             ingredients = ''
             allergens = ''
             for tag in p_tags:
+                tag_text = tag.text.strip()
+                if 'Ingredients:' in tag_text:
+                    ingredients = tag_text
+                elif 'Contains:' in tag_text:
+                    allergens = tag_text
+            
+            # for loop runs through all of the div tags to find the one food item whose info is in a div
+            for tag in div_tags:
                 tag_text = tag.text.strip()
                 if 'Ingredients:' in tag_text:
                     ingredients = tag_text
@@ -143,7 +157,11 @@ def parse(soup, location):
             if ingredients == 'Ingredients:':
                 ingredients = ''
             else:
-                ingredients = ingredients.replace('\u00a0', ' ').split(': ')[1]
+                try:
+                    ingredients = ingredients.replace('\u00a0', ' ').split(': ')[1]
+                except:
+                    # One food item in entre has no space between its colon and ingredients
+                    ingredients = ingredients.replace('\u00a0', ' ').split(':')[1]
             
             if allergens == 'Contains:':
                 allergens = ''
@@ -161,4 +179,84 @@ def parse(soup, location):
             
         #add to the main dictionary 
         dict[category.string] = category_dict
+    return dict
+
+# An alternate parse function to take care of cove items in: asian-fusion, bread, and halal
+def parse_cove_alt(soup, location):
+    dict = {}
+
+    section = soup.find(id=location)
+    categories = section.find('div').find_all('h3', recursive=False)
+
+    for category in categories:
+        # Get names of menu items
+        item_div = category.find_next_sibling('div')
+        
+        category_dict = {}
+
+        
+        #get dietary restriction information
+        
+        dietary_icons = item_div.find_all('img')
+        print(len(dietary_icons))
+        dietary_restrictions = []
+        #find which icons apply
+        for icon in dietary_icons:
+            if 'vegan' in icon['src']:
+                dietary_restrictions.append('vegan')
+            elif 'vegetarian' in icon['src']:
+                dietary_restrictions.append('vegetarian')
+            elif 'gluten-free' in icon['src']:
+                dietary_restrictions.append('gluten free')
+            elif 'dairy-free' in icon['src']:
+                dietary_restrictions.append('dairy free')
+            elif 'halal' in icon['src']:
+                dietary_restrictions.append('halal')
+        print(dietary_restrictions)
+
+        #get ingredients and allergens
+        p_tags = item_div.find_all('p')
+        # Div tag is used because one of the food items in entre has info kept in a div and not p
+        div_tags = item_div.find_all('div')
+
+        ingredients = ''
+        allergens = ''
+        for tag in p_tags:
+            tag_text = tag.text.strip()
+            if 'Ingredients:' in tag_text:
+                ingredients = tag_text
+            elif 'Contains:' in tag_text:
+                allergens = tag_text
+        
+        # for loop runs through all of the div tags to find the one food item whose info is in a div
+        for tag in div_tags:
+            tag_text = tag.text.strip()
+            if 'Ingredients:' in tag_text:
+                ingredients = tag_text
+            elif 'Contains:' in tag_text:
+                allergens = tag_text
+
+        #get rid of "ingredients" and "contains" labels, and remove weird characters
+        if ingredients == 'Ingredients:':
+            ingredients = ''
+        else:
+            try:
+                ingredients = ingredients.replace('\u00a0', ' ').split(': ')[1]
+            except:
+                # One food item in entre has no space between its colon and ingredients
+                ingredients = ingredients.replace('\u00a0', ' ').split(':')[1]
+        
+        if allergens == 'Contains:':
+            allergens = ''
+        else:
+            allergens = allergens.replace('\u00a0', ' ').split(': ')[1]
+
+        #add data to dictionary for that menu item
+        menu_item_dict = {}
+        menu_item_dict['dietary restrictions'] = dietary_restrictions
+        menu_item_dict['ingredients'] = ingredients
+        menu_item_dict['allergens'] = allergens\
+            
+        #add to the main dictionary 
+        dict[category.string] = menu_item_dict
     return dict
