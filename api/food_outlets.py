@@ -175,6 +175,7 @@ def turn_to_datetime(time_range):
 
 def is_within_date_range(current_date, food_outlets):
     # Example date range format: "June 1 - June 30"
+    #get passed a specific block then determine which are open at which time (create a new list)
     print(food_outlets)
     return None
     return food_outlets[current_date]
