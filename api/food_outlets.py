@@ -45,6 +45,7 @@ def get_food_outlets():
 def clean_text(tag):
     #NEXT TO DO Made header in <strong> tag and it time a header for the sub outlets in the another json section
     text_list = (tag.stripped_strings)
+    text_list = [text.replace('\u00a0', ' ') for text in text_list]
     return text_list
 
 def clean_time_format(time_string):
@@ -88,7 +89,7 @@ def parse(soup):
                         
                         # hours = cols[1].get_text(separator="\n", strip=True)
                         # hours = hours.split('\n')
-
+                        
                         outlet_name = clean_text(cols[0])
                         # outlet_name = outlet_name.split('\n')
                         # print(f"outlet_name {outlet_name}")
@@ -120,10 +121,7 @@ def parse(soup):
 
     return food_outlets
 
-    
-from datetime import datetime
 
-from datetime import datetime
 
 #currently doesnt work quite right
 def turn_to_datetime(time_range):
@@ -177,20 +175,13 @@ def is_within_date_range(current_date, food_outlets):
     # Example date range format: "June 1 - June 30"
     #get passed a specific block then determine which are open at which time (create a new list)
     print(food_outlets)
-    return None
-    return food_outlets[current_date]
-    try:
-        start_date_str, end_date_str = date_range_text.split('-')
-        start_date = datetime.strptime(start_date_str.strip(), "%B %d")
-        end_date = datetime.strptime(end_date_str.strip(), "%B %d")
+    pass
 
-        # Handle year for comparison
-        start_date = start_date.replace(year=current_date.year)
-        end_date = end_date.replace(year=current_date.year)
 
-        return start_date <= current_date <= end_date
-    except ValueError:
-        return False
+def determine_date():
+    pass
+    #given a list of datetime objects, determine which list is the current day
+
 
 if __name__ == '__main__':
     app.run(debug=True)
