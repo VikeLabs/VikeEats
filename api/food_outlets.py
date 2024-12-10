@@ -42,6 +42,20 @@ def get_food_outlets():
     return jsonify(food_outlets)
     # return jsonify(ordered_list_of_pairs)
 
+
+@food_outlets_blueprint.route('/currently_open')
+def get_currently_open():
+    r = requests.get("https://www.uvic.ca/services/food/where/index.php")
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to retrieve page"}), 500
+
+    soup = BeautifulSoup(r.content, 'html.parser')
+    food_outlets = parse(soup)
+
+    #for now, pass with "friday" block
+    open_outlets = is_within_date_range(datetime.now().time(), food_outlets['Friday'])
+    return jsonify(open_outlets)
+
 def clean_text(tag):
     #NEXT TO DO Made header in <strong> tag and it time a header for the sub outlets in the another json section
     text_list = (tag.stripped_strings)
@@ -172,10 +186,21 @@ def turn_to_datetime(time_range):
 
 
 def is_within_date_range(current_date, food_outlets):
-    # Example date range format: "June 1 - June 30"
-    #get passed a specific block then determine which are open at which time (create a new list)
-    print(food_outlets)
-    pass
+    open_outlets = {}
+
+    #iterate through the dictionary
+    for outlet in food_outlets:
+        #convert to datetime object if not closed
+        if food_outlets[outlet] != 'Closed':
+            hours_range = turn_to_datetime(food_outlets[outlet])
+            open_time = hours_range[0][0]
+            close_time = hours_range[0][1]
+
+            #append to dictionary if open
+            if current_date >= open_time and current_date <= close_time:
+                open_outlets[outlet] = food_outlets[outlet]
+    
+    return open_outlets
 
 
 def determine_date():
