@@ -208,17 +208,16 @@ def determine_date(food_outlets):
 
     current_date = datetime.now()
 
-    shortened_month = "Jan" #current_date.strftime('%b')
-    day_of_week = "Thursday" #current_date.strftime('%A')
-    day_of_month = 2 #current_date.strftime('%d')
+    shortened_month = current_date.strftime('%b')
+    day_of_week = current_date.strftime('%A')
+    day_of_month = current_date.strftime('%d')
 
     for key in food_outlets:
         if re.match(f"^{day_of_week},* {shortened_month} {day_of_month}$", key):
             return {key: food_outlets[key]}
         else:
+            key_list = key.split(" - ")
             try:
-                key_list = key.split(" - ")
-                
                 upper_date = int(key_list[1].split(" ")[2])
                 lower_date = int(key_list[0].split(" ")[2])
                 menu_month = key_list[1].split(" ")[1]
@@ -226,8 +225,6 @@ def determine_date(food_outlets):
                 if menu_month == shortened_month and day_of_month <= upper_date and day_of_month >= lower_date:
                     return {key: food_outlets[key]}
             except:
-                if key == "Monday, Dec 2 - Wednesday Dec 4":
-                    return {"####": "###", "dom": day_of_month, "ud": upper_date, "ld": lower_date}
                 pass
     
     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
