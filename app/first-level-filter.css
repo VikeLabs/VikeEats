@@ -1,0 +1,12 @@
+.filter-button {
+    @apply px-4 py-2 rounded transition-opacity cursor-pointer;
+}
+
+.filter-button.active {
+    @apply text-white opacity-100;
+    background-color: #2f76ff;
+}
+
+.filter-button.inactive {
+    @apply bg-gray-200 text-black opacity-50;
+}
