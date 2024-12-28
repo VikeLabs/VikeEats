@@ -10,9 +10,8 @@ from collections import OrderedDict
 from flask import Flask, render_template, jsonify
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, date
 from flask import Blueprint
-from datetime import datetime
 import copy
 # from flask_cors import CORS
 
@@ -32,6 +31,8 @@ def get_food_outlets():
 
     soup = BeautifulSoup(r.content, 'html.parser')
     food_outlets = parse(soup)
+    is_date = determine_date(food_outlets)
+    # Pass food_outlets
     key_var = 'Monday - Thursday'
     key_var = 'Tuesday, July 2 - Wednesday, July 31'
     # date_adusted_list = is_within_date_range(key_var, food_outlets)
@@ -39,7 +40,7 @@ def get_food_outlets():
     # ordered_list_of_pairs = [{"key": k, "value": v} for k, v in date_adusted_list.items()]
     # ordered_list_of_pairs = [[key, value] for key, value in date_adusted_list.items()]
 
-    return jsonify(food_outlets)
+    return jsonify(is_date)
     # return jsonify(ordered_list_of_pairs)
 
 def clean_text(tag):
@@ -177,8 +178,46 @@ def is_within_date_range(current_date, food_outlets):
     pass
 
 
-def determine_date():
-    pass
+def determine_date(food_outlets):
+
+    current_date = datetime.now()
+
+    shortened_month = "Jan" #current_date.strftime('%b')
+    day_of_week = "Thursday" #current_date.strftime('%A')
+    day_of_month = 2 #current_date.strftime('%d')
+
+    for key in food_outlets:
+        if re.match(f"^{day_of_week},* {shortened_month} {day_of_month}$", key):
+            return {key: food_outlets[key]}
+        else:
+            try:
+                key_list = key.split(" - ")
+                
+                upper_date = int(key_list[1].split(" ")[2])
+                lower_date = int(key_list[0].split(" ")[2])
+                menu_month = key_list[1].split(" ")[1]
+                menu_day_week = key_list[1]
+                if menu_month == shortened_month and day_of_month <= upper_date and day_of_month >= lower_date:
+                    return {key: food_outlets[key]}
+            except:
+                if key == "Monday, Dec 2 - Wednesday Dec 4":
+                    return {"####": "###", "dom": day_of_month, "ud": upper_date, "ld": lower_date}
+                pass
+    
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+    for key in food_outlets:
+        if key == day_of_week:
+            return {key: food_outlets[key]}
+        else:
+            key_list = key.split(" - ")
+            lower_index = days.index(key_list[0])
+            higher_index = days.index(key_list[1])
+            today_index = days.index(day_of_week)
+            if today_index >= lower_index and today_index <= higher_index:
+                return {key: food_outlets[key]}
+
+
     #given a list of datetime objects, determine which list is the current day
 
 
