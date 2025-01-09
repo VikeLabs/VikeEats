@@ -1,38 +1,41 @@
-import { useEffect } from 'react';
-import { Feature } from 'ol';
-import { Point } from 'ol/geom';
-import { fromLonLat } from 'ol/proj';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
-import { Style, Circle, Fill, Stroke } from 'ol/style';
+import { useEffect } from "react";
+import { Feature } from "ol";
+import { Point } from "ol/geom";
+import { fromLonLat } from "ol/proj";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import { Style, Circle, Fill, Stroke } from "ol/style";
+import { markerData } from "./marker-data";
+import { useCategory } from "./category-state";
+import { getMapInstance } from "./map-manager";
 
 //this component doesn't render anything directly
-const MarkerLayer = ({ map, activeMarker }) => {
+const MarkerLayer = () => {
+  //get the shared map instance
+  const map = getMapInstance();
+  //get the shared state for markers
+  const [activeMarker] = useCategory();
+
   useEffect(() => {
     //wait for the map to be ready
     if (!map) return;
 
-    const markers = [
-      { id: 1, category: "canada", coords: [-123.1216, 49.2827] }, // Vancouver
-      { id: 2, category: "america", coords: [-122.3321, 47.6062] }, // Seattle
-      { id: 3, category: "america", coords: [-73.9352, 40.7306] },  // New York
-      { id: 4, category: "europe", coords: [-0.1276, 51.5074] },   // London
-      { id: 5, category: "europe", coords: [2.3522, 48.8566] },    // Paris
-    ];
-
     //convert coordinates to features and assign styles
-    const features = markers.map((marker) => {
+    const features = markerData.map((marker) => {
       const feature = new Feature({
         geometry: new Point(fromLonLat(marker.coords)),
       });
 
-      const isActive = marker.category === activeMarker;
+      //decides which marker is blue
+      const isActive = 
+        activeMarker === "All" || 
+        (marker.categories && marker.categories.includes(activeMarker));
+
       feature.setStyle(
         new Style({
           image: new Circle({
             radius: 8,
-            fill: new Fill({ color: isActive ? 'blue' : 'grey' }),
-            stroke: new Stroke({ color: '#000', width: 1 }),
+            fill: new Fill({ color: isActive ? "blue" : "grey" }),
           }),
         })
       );

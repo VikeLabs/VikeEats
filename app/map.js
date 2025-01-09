@@ -1,29 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import 'ol/ol.css';
-import { Map, View } from 'ol';
-import TileLayer from 'ol/layer/Tile';
-import OSM from 'ol/source/OSM';
+import { getMapInstance } from './map-manager';
 
 const MapLayer = React.forwardRef((props, ref) => {
   const mapElement = useRef();
 
   useEffect(() => {
-    // Create the map
-    const map = new Map({
-      target: mapElement.current,
-      layers: [
-        new TileLayer({
-          source: new OSM(),
-        }),
-      ],
-      view: new View({
-        center: [0, 0],
-        zoom: 2,
-      }),
-    });
+    //create the map using function in map-manager.js
+    const map = getMapInstance(mapElement.current);
 
     if (ref) {
-      //updates map for parent component
+      //updates map
       ref.current = map;
     }
 
@@ -34,9 +21,11 @@ const MapLayer = React.forwardRef((props, ref) => {
     <div
       ref={mapElement}
       style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
         width: '100%',
-        height: '400px',
-        border: '1px solid black',
+        height: '100%',
       }}
     ></div>
   );

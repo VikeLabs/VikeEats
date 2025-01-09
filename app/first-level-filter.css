@@ -1,12 +1,13 @@
 .filter-button {
-    @apply px-4 py-2 rounded transition-opacity cursor-pointer;
+    @apply  top-[65px] m-1 px-4 py-2 rounded transition-opacity cursor-pointer relative z-10;
+
 }
 
 .filter-button.active {
-    @apply text-white opacity-100;
+    @apply text-white;
     background-color: #2f76ff;
 }
 
 .filter-button.inactive {
-    @apply bg-gray-200 text-black opacity-50;
+    @apply bg-gray-200 text-black;
 }

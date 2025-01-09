@@ -1,86 +1,62 @@
 import React, { useState } from "react";
 import "./first-level-filter.css";
+import { useCategory } from "./category-state";
 
 //temporary filter buttons for markers
 //sets the selected category into activeMarker state for MarkerLayer to display
-const FilterButtons = ({ activeMarker, setActiveMarker }) => {
+const FilterButtons = () => {
   //stores id of the selected filter button
   //used for styling of the buttons
   const [idSelected, setIdSelected] = useState(null);
 
+  //stores category selected
+  const [selectedCategory, setSelectedCategory] = useCategory();
+
+  //filter buttons
+  const categories = [
+    "all",
+    "filter1",
+    "filter2",
+    "filter3",
+    "filter4",
+    "filter5",
+  ];
+
   //set selected id and category to its respective states
   const handleButtonClick = (id, category) => {
     setIdSelected(id);
-    setActiveMarker(category);
+    setSelectedCategory(category);
+    console.log({ category });
+    console.log({ selectedCategory });
   };
 
   return (
     <div>
       <div className="filter-buttons">
-        <button
-          id="1"
-          category="canada"
-          className={`filter-button ${
-            idSelected === 1 ? "active" : "inactive" //this is for filter button styling
-          }`}
-          onClick={() => handleButtonClick(1, "canada")}
-        >
-          Filter 1
-        </button>
+        {/* map out filter buttons from categories array from above */}
+        {categories.map((category, index) => (
+          <button
+            className={`filter-button ${
+              idSelected === index ? "active" : "inactive"
+            }`}
+            key={category}
+            id={index}
+            onClick={() => handleButtonClick(index, category)}
+          >
+            {category}
+          </button>
+        ))}
 
+        {/* greys all markers and hides all cards */}
         <button
-          id="2"
-          category="america"
-          className={`filter-button ${
-            idSelected === 2 ? "active" : "inactive"
-          }`}
-          onClick={() => handleButtonClick(2, "america")}
+          key={"clear"}
+          id={-1}
+          onClick={() => handleButtonClick(-1, null)}
+          className={"filter-button inactive"}
         >
-          Filter 2
-        </button>
-
-        <button
-          id="3"
-          category="america"
-          className={`filter-button ${
-            idSelected === 3 ? "active" : "inactive"
-          }`}
-          onClick={() => handleButtonClick(3, "america")}
-        >
-          Filter 3
-        </button>
-
-        <button
-          id="4"
-          category="europe"
-          className={`filter-button ${
-            idSelected === 4 ? "active" : "inactive"
-          }`}
-          onClick={() => handleButtonClick(4, "europe")}
-        >
-          Filter 4
-        </button>
-        
-        <button
-          id="5"
-          category="europe"
-          className={`filter-button ${
-            idSelected === 5 ? "active" : "inactive"
-          }`}
-          onClick={() => handleButtonClick(5, "europe")}
-        >
-          Filter 5
+          clear
         </button>
       </div>
-
-      {/* for testing purposes */}
-      {/* <div className="selected-filter">
-        {activeMarker ? (
-          <p>Selected Filter: {activeMarker}<br />Selected Id: {idSelected}</p>
-        ) : (
-          <p>No filter selected.</p>
-        )}
-      </div> */}
     </div>
   );
 };
