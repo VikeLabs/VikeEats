@@ -9,6 +9,9 @@ import { markerData } from "./marker-data";
 import { useCategory } from "./category-state";
 import { getMapInstance } from "./map-manager";
 
+//Globals
+let blue = "#2f76ff"
+
 //this component doesn't render anything directly
 const MarkerLayer = () => {
   //get the shared map instance
@@ -35,7 +38,7 @@ const MarkerLayer = () => {
         new Style({
           image: new Circle({
             radius: 8,
-            fill: new Fill({ color: isActive ? "blue" : "grey" }),
+            fill: new Fill({ color: isActive ? blue : "grey" }),
           }),
         })
       );

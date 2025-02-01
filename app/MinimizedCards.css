@@ -1,22 +1,17 @@
 .MinimizedCards {
-  @apply fixed top-[65px] right-0 w-[450px] h-screen overflow-y-scroll border-r border-gray-100 p-4 box-border;
-  background-color: rgba(255, 255, 255, 0);
+  @apply fixed top-[65px] right-0 w-[450px] h-screen overflow-y-auto border-r border-gray-100 p-4 box-border font-header-regular text-primary-dark pb-[70px];
 }
 
 .store_card {
-  @apply flex items-center py-4 border-8 cursor-pointer bg-white p-4 mb-2 shadow-md rounded-md;
-  border-style: solid;
-  border-color: #B2B2B2;
-  border-width: 1px;
+  @apply flex items-center py-4 border-8 cursor-pointer bg-white mb-2 shadow-dark rounded-md pl-4 pb-0 pt-0 pr-0;
 }
 
 .store_image {
-  @apply flex-shrink-0 h-32 ml-auto rounded-md;
+  @apply flex-shrink-0 h-36 ml-auto rounded-r-md object-cover mb-0;
 }
 
 .store_card:hover {
-  @apply shadow-xl transition duration-300 ease-in-out;
-  background-color: #2f76ff;
+  @apply transition duration-300 ease-in-out bg-primary-light;
 }
 .store_card:hover .store_title,
 .store_card:hover .store_time {
@@ -24,11 +19,9 @@
 }
 
 .store_title {
-  @apply m-0 text-lg font-medium;
-  color: #1F2232
+  @apply text-base font-bold mb-0 mx-2 pb-0;
 }
 
 .store_time {
-  @apply m-0 text-gray-600 mt-1;
-  color: #1F2232;
+  @apply text-base font-header-regular mt-0 mx-2 pb-0;
 }

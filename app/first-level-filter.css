@@ -1,13 +1,15 @@
 .filter-button {
-    @apply  top-[65px] m-1 px-4 py-2 rounded transition-opacity cursor-pointer relative z-10;
-
+    @apply top-[65px] m-1 px-4 py-2 rounded-full text-gray-800 border-0 shadow-dark cursor-pointer relative z-10;
 }
 
 .filter-button.active {
-    @apply text-white;
-    background-color: #2f76ff;
+    @apply text-white bg-primary-light shadow-dark;
 }
 
 .filter-button.inactive {
-    @apply bg-gray-200 text-black;
+    @apply bg-white text-primary-dark;
+}
+
+.filter-button:hover {
+    @apply text-white bg-primary-light shadow-dark transition duration-300 ease-in-out;
 }
