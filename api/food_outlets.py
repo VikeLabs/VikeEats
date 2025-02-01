@@ -32,16 +32,10 @@ def get_food_outlets():
     soup = BeautifulSoup(r.content, 'html.parser')
     food_outlets = parse(soup)
     is_date = determine_date(food_outlets)
-    # Pass food_outlets
-    key_var = 'Monday - Thursday'
-    key_var = 'Tuesday, July 2 - Wednesday, July 31'
-    # date_adusted_list = is_within_date_range(key_var, food_outlets)
 
-    # ordered_list_of_pairs = [{"key": k, "value": v} for k, v in date_adusted_list.items()]
-    # ordered_list_of_pairs = [[key, value] for key, value in date_adusted_list.items()]
 
+    return jsonify(food_outlets)
     return jsonify(is_date)
-    # return jsonify(ordered_list_of_pairs)
 
 
 @food_outlets_blueprint.route('/currently_open')
@@ -61,6 +55,8 @@ def clean_text(tag):
     #NEXT TO DO Made header in <strong> tag and it time a header for the sub outlets in the another json section
     text_list = (tag.stripped_strings)
     text_list = [text.replace('\u00a0', ' ') for text in text_list]
+    # text_list = [text.replace('*', '') for text in text_list]
+    text_list = [text.strip() for text in text_list]
     return text_list
 
 def clean_time_format(time_string):
@@ -74,12 +70,12 @@ def clean_time_format(time_string):
 def parse(soup):
 
     """Parse the REGULAR HOURS for the food outlets from the UVic Food Services page."""
+
     # Extract information
-    # food_outlets = OrderedDict()
-    food_outlets = dict()
-    # food_outlets = OrderedDict(dict)
+    # food_outlets = dict()
+    food_outlets = {}
     sections = soup.find_all('div', class_='accordions')
-    print(len(sections))
+    # print(len(sections))
     # print(sections)
 
     
@@ -88,45 +84,55 @@ def parse(soup):
         print(len(headers))
         for header in headers:
             header_name = str(header.get_text().strip())
+
             food_outlets[header_name] = {}
-            print(f"header_name: ({header_name})")
-            tables = section.find_all('table')
-            print("number of tables: ", len(tables))
-            for table in tables:
-                rows = table.find_all('tr')
-                for row in rows:
-                    cols = row.find_all('td')
-                    if len(cols) == 2:
+            sibling = header.find_next_sibling()
+            while sibling:
+                if sibling.name == 'h3':
+                    break
+                if sibling.name == 'table':
+                    rows = sibling.find_all('tr')
+                    for row in rows:
+                        cols = row.find_all('td')
+                        if len(cols) == 2:
+            # print(f"header_name: ({header_name})")
+            # tables = section.find_all('table')
+            # print("number of tables: ", len(tables))
+            # for table in tables:
+            #     rows = table.find_all('tr')
+            #     for row in rows:
+            #         cols = row.find_all('td')
+            #         if len(cols) == 2:
                         
-                        #splits the outlet names and hours into a list of strings
-                        # outlet_name = cols[0].get_text(separator="\n", strip=True)
-                        # outlet_name = outlet_name.split('\n')
-                        
-                        # hours = cols[1].get_text(separator="\n", strip=True)
-                        # hours = hours.split('\n')
-                        
-                        outlet_name = clean_text(cols[0])
-                        # outlet_name = outlet_name.split('\n')
-                        # print(f"outlet_name {outlet_name}")
-                        
-                        hours = clean_text(cols[1])
-                        # hours = 
-                        # print(f"hours {hours}")
-                        # hours = hours.split('\n')
+                            #splits the outlet names and hours into a list of strings
+                            # outlet_name = cols[0].get_text(separator="\n", strip=True)
+                            # outlet_name = outlet_name.split('\n')
+                            
+                            # hours = cols[1].get_text(separator="\n", strip=True)
+                            # hours = hours.split('\n')
+                            
+                            outlet_list  = clean_text(cols[0])
+                            # outlet_name = outlet_name.split('\n')
+                            # print(f"outlet_name {outlet_name}")
+                            
+                            hours_list  = clean_text(cols[1])
 
+                            print(f"outlet_list {outlet_list}")
+                            print(f"hours_list {hours_list}")
 
-                        
-
-                        food_outlets[header_name].update(dict(zip(outlet_name, hours))) #adds the outlet name and hours to the dictionary
-                        # print(f"food_outlets: {food_outlets}")
-
+                            for outlet, hours in zip(outlet_list, hours_list):
+                                food_outlets[header_name][outlet] = hours
+                            
+                            # food_outlets[header_name].update(dict(zip(outlet_list , hours_list ))) #adds the outlet name and hours to the dictionary
+                            # print(f"food_outlets: {food_outlets}")
+                sibling = sibling.find_next_sibling()
     #process hours into date time objects
     time_ranges = copy.deepcopy(food_outlets)
     for day_range in food_outlets:
         for outlet, time_range in food_outlets[day_range].items():
             time_ranges[day_range][outlet] = turn_to_datetime(time_range)
-            print(f"food_outlets: {outlet}: {time_ranges[day_range][outlet]}")
-    print("SUCCESS\n\n")
+            # print(f"food_outlets: {outlet}: {time_ranges[day_range][outlet]}")
+    # print("SUCCESS\n\n")
 
     # parsed_outlets = {}
     # for day_range, outlets in food_outlets.items():
@@ -134,6 +140,7 @@ def parse(soup):
     #     for outlet, hours in outlets.items():
     #         parsed_outlets[day_range][outlet] = turn_to_datetime(hours)
 
+    
     return food_outlets
 
 
