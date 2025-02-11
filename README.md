@@ -1,13 +1,20 @@
 <p align="center">
   <a href="https://nextjs-flask-starter.vercel.app/">
-    <img src="https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png" height="96">
-    <h3 align="center">Next.js Flask Starter</h3>
+    <h3 align="center">VikeEats</h3>
   </a>
 </p>
 
-<p align="center">Simple Next.js boilerplate that uses <a href="https://flask.palletsprojects.com/">Flask</a> as the API backend.</p>
+<p align="center">
+  VikeEats is a web map application displaying all food outlets on the University of Victoria campus. This project was started under the University of Victoria Vikelabs Club to counteract the lack of a centralized information hub regarding the food options on campus: especially regarding dietary restrictions. 
+  It is built as a hybrid Next.js + Python app that uses Next.js as the frontend and Flask as the API backend.
+</p>
 
 <br/>
+
+## Gallery
+<img src="documentation/imgs/vikeeats1.PNG" width="100%" alt="VikeEats front page 1"/>
+<img src="documentation/imgs/vikeeats2.PNG" width="100%" alt="VikeEats front page 2"/>
+![VikeEats GIF](/documentation/imgs/vikeeats_gif.gif)
 
 ## How To Run
 
@@ -26,10 +33,6 @@ If this doesn't work run
 ```bash
 npm install -g pnpm
 ```
-
-## Introduction
-
-This is a hybrid Next.js + Python app that uses Next.js as the frontend and Flask as the API backend. One great use case of this is to write Next.js apps that use Python AI libraries on the backend.
 
 ## How It Works
 
