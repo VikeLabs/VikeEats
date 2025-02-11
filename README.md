@@ -14,7 +14,8 @@
 ## Gallery
 <img src="documentation/imgs/vikeeats1.PNG" width="100%" alt="VikeEats front page 1"/>
 <img src="documentation/imgs/vikeeats2.PNG" width="100%" alt="VikeEats front page 2"/>
-![VikeEats GIF](/documentation/imgs/vikeeats_gif.gif)
+
+![VikeEats GIF](./documentation/imgs/vikeeats_gif.gif)
 
 ## How To Run
 
