@@ -6,13 +6,14 @@ import { stores } from "./minimized-cards-data";
 //component for displaying minimized food place cards
 const MinimizedCards = () => {
   const cards = stores;
-  const [selectedCategory] = useCategory();
+  const [selectedCategories] = useCategory();
 
   //filteredCards store cards that will be displayed
-  const filteredCards =
-    selectedCategory === "All"
-      ? cards
-      : cards.filter((card) => card.categories.includes(selectedCategory));
+  const filteredCards = selectedCategories.includes("all")
+    ? cards
+    : cards.filter((card) =>
+        card.categories.some((cat) => selectedCategories.includes(cat))
+      );
 
   return (
     <div className="MinimizedCards">

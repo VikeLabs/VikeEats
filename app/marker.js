@@ -10,14 +10,14 @@ import { useCategory } from "./category-state";
 import { getMapInstance } from "./map-manager";
 
 //Globals
-let blue = "#2f76ff"
+let blue = "#2f76ff";
 
 //this component doesn't render anything directly
 const MarkerLayer = () => {
   //get the shared map instance
   const map = getMapInstance();
   //get the shared state for markers
-  const [activeMarker] = useCategory();
+  const [selectedCategories] = useCategory();
 
   useEffect(() => {
     //wait for the map to be ready
@@ -30,9 +30,10 @@ const MarkerLayer = () => {
       });
 
       //decides which marker is blue
-      const isActive = 
-        activeMarker === "All" || 
-        (marker.categories && marker.categories.includes(activeMarker));
+      const isActive =
+        selectedCategories.includes("all") ||
+        (marker.categories &&
+          marker.categories.some((cat) => selectedCategories.includes(cat)));
 
       feature.setStyle(
         new Style({
@@ -55,7 +56,7 @@ const MarkerLayer = () => {
 
     //cleanup on component unmount
     return () => map.removeLayer(vectorLayer);
-  }, [map, activeMarker]);
+  }, [map, selectedCategories]);
 
   return null;
 };

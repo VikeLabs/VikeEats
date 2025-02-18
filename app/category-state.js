@@ -1,26 +1,33 @@
 import { useState, useEffect } from "react";
 
-//default set to all to show all store cards
-let selectedCategory = "All";
+let selectedCategories = ["all"];
 let listeners = [];
 
-//sets up useState for selectedCategory and setSelectedCategory
 export const useCategory = () => {
-  const [state, setState] = useState(selectedCategory);
+  const [state, setState] = useState(selectedCategories);
 
   useEffect(() => {
-    const listener = (newCategory) => setState(newCategory);
+    const listener = (newCategories) => setState(newCategories);
     listeners.push(listener);
-
     return () => {
       listeners = listeners.filter((l) => l !== listener);
     };
   }, []);
 
-  const setCategory = (newCategory) => {
-    selectedCategory = newCategory;
-    listeners.forEach((listener) => listener(newCategory));
+  const toggleCategory = (newCategory) => {
+    if (newCategory === null) {
+      // Clear all selections
+      selectedCategories = [];
+      listeners.forEach((listener) => listener([]));
+      return;
+    }
+    const updated = selectedCategories.includes(newCategory)
+      ? selectedCategories.filter((cat) => cat !== newCategory)
+      : [...selectedCategories, newCategory];
+
+    selectedCategories = updated;
+    listeners.forEach((listener) => listener(updated));
   };
 
-  return [state, setCategory];
+  return [state, toggleCategory];
 };
