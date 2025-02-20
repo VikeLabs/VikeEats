@@ -1,31 +1,56 @@
-import logo from './logo.svg';
-import './App.css';
-import React from 'react';
-import Button from './filter-button.js'; 
-import Dropdown from './filter-button-dropdown.js'; 
+import React, { useEffect, useState } from "react";
+
+import NavBar from "./Navbar";
+import MinimizedCards from "./MinimizedCards";
+import FilterButtons from "./first-level-filter";
+import MapLayer from "./map";
+import MarkerLayer from "./marker";
 
 const App = () => {
-  const handleClick = () => {
-    alert('Button clicked!');
-  };
-  
-  const options = [
-    { value: 'option1', label: 'Option 1' },
-    { value: 'option2', label: 'Option 2' },
-    { value: 'option3', label: 'Option 3' },
-  ];
+  const [foodOutletsData, setFoodOutletsData] = useState(null);
 
-  const handleDropdownSelect = (selectedOption) => {
-    console.log('Selected Option:', selectedOption);
-  };
+  useEffect(() => {
+    fetch("http://127.0.0.1:5328/api/food_outlets")
+      .then((response) => response.json())
+      .then((data) => setFoodOutletsData(data))
+      .catch((error) => console.error("Error fetching food_outlets:", error));
+    }, []);
 
   return (
     <div>
-      <Button 
-        label="Filter" 
-        onClick={handleClick} 
-      />
-	  <Dropdown options={options} onSelect={handleDropdownSelect} />
+      <div>
+        {foodOutletsData ? (
+          <div>
+            {Object.entries(foodOutletsData).map(([day, outlets]) => (
+              <div
+                key={day}
+                style={{
+                  marginBottom: "20px",
+                  borderBottom: "1px solid #ccc",
+                  paddingBottom: "10px",
+                }}
+              >
+                <h2>{day}</h2>
+                <ul>
+                  {Object.entries(outlets).map(([outlet, hours]) => (
+                    <li key={outlet}>
+                      <strong>{outlet}:</strong> {hours}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>Loading food outlet schedule...</p>
+        )}
+      </div>
+      
+      {/* <MapLayer />
+      <MarkerLayer />
+      <FilterButtons />
+      <NavBar />
+      <MinimizedCards /> */}
     </div>
   );
 };
