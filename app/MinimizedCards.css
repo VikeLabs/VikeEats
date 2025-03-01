@@ -1,0 +1,27 @@
+.MinimizedCards {
+  @apply fixed top-[65px] right-0 w-[450px] h-screen overflow-y-auto border-r border-gray-100 p-4 box-border font-header-regular text-primary-dark pb-[70px];
+}
+
+.store_card {
+  @apply flex items-center py-4 border-8 cursor-pointer bg-white mb-2 shadow-dark rounded-md pl-4 pb-0 pt-0 pr-0;
+}
+
+.store_image {
+  @apply flex-shrink-0 h-36 ml-auto rounded-r-md object-cover mb-0;
+}
+
+.store_card:hover {
+  @apply transition duration-300 ease-in-out bg-primary-light;
+}
+.store_card:hover .store_title,
+.store_card:hover .store_time {
+  color: #ffffff; 
+}
+
+.store_title {
+  @apply text-base font-bold mb-0 mx-2 pb-0;
+}
+
+.store_time {
+  @apply text-base font-header-regular mt-0 mx-2 pb-0;
+}
