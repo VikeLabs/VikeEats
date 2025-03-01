@@ -7,7 +7,7 @@ import re
 from collections import OrderedDict
 
 
-from flask import Flask, render_template, jsonify, current_app, request
+from flask import Flask, jsonify, current_app, request
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, date, time
@@ -18,29 +18,12 @@ import logging
 import json
 from .datetimeencoder import DateTimeEncoder
 import calendar
+import logging
+
 
 food_outlets_blueprint = Blueprint('food_outlets', __name__)
 app = Flask(__name__)
 
-# @app.route('/')
-# def index():
-#     return "Hello World"
-#     # return render_template('index.html')
-
-# // Example frontend usage:
-# fetch('/food_outlets')
-#   .then(response => response.json())
-#   .then(data => {
-#     // Access formatted hours
-#     console.log(data['Monday']['Cafe']['displayHours']); // "11:00 AM - 2:00 PM"
-    
-#     // Access raw hours for custom formatting
-#     data['Monday']['Cafe']['rawHours'].forEach(range => {
-#       console.log(`Opens: ${range.start}, Closes: ${range.end}`);
-#     });
-#   });
-
-import logging
 
 
 
@@ -73,19 +56,6 @@ def get_food_outlets():
         return jsonify({"error": str(e)}), 500
 
 
-# needs fixing
-# @food_outlets_blueprint.route('/currently_open')
-# def get_currently_open():
-#     r = requests.get("https://www.uvic.ca/services/food/where/index.php")
-#     if r.status_code != 200:
-#         return jsonify({"error": "Failed to retrieve page"}), 500
-
-#     soup = BeautifulSoup(r.content, 'html.parser')
-#     food_outlets = parse(soup)
-
-#     #for now, pass with "friday" block
-#     open_outlets = is_within_date_range(datetime.now().time(), food_outlets['Friday'])
-#     return jsonify(open_outlets)
 
 # example usage 
 # /api/currently_open?time=14:20&day=monday
@@ -123,9 +93,6 @@ def get_currently_open():
         else:
             day = calendar.day_name[datetime.now().weekday()]
 
-        # now = datetime.now()
-        # current_time = now.time()
-        # day = calendar.day_name[now.weekday()]
 
         # Map day to schedule block
         if day in ['Saturday', 'Sunday']:

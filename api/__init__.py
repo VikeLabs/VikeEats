@@ -15,14 +15,7 @@ def create_app():
     app.register_blueprint(food_outlets_blueprint, url_prefix='/api')
     app.register_blueprint(menu_blueprint, url_prefix='/api')
     return app
-# app = Flask(__name__)
-# app.json_encoder = DateTimeEncoder
-# CORS(app)
 
-
-# Register the blueprints
-# app.register_blueprint(food_outlets_blueprint, url_prefix='/api')
-# app.register_blueprint(menu_blueprint, url_prefix='/api')
 
 app = create_app()
 
