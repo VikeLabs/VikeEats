@@ -7,7 +7,7 @@ import re
 from collections import OrderedDict
 
 
-from flask import Flask, render_template, jsonify, current_app, request
+from flask import Flask, jsonify, current_app, request
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, date, time
@@ -18,55 +18,14 @@ import logging
 import json
 from .datetimeencoder import DateTimeEncoder
 import calendar
+import logging
+
 
 food_outlets_blueprint = Blueprint('food_outlets', __name__)
 app = Flask(__name__)
 
-# @app.route('/')
-# def index():
-#     return "Hello World"
-#     # return render_template('index.html')
 
-# // Example frontend usage:
-# fetch('/food_outlets')
-#   .then(response => response.json())
-#   .then(data => {
-#     // Access formatted hours
-#     console.log(data['Monday']['Cafe']['displayHours']); // "11:00 AM - 2:00 PM"
-    
-#     // Access raw hours for custom formatting
-#     data['Monday']['Cafe']['rawHours'].forEach(range => {
-#       console.log(`Opens: ${range.start}, Closes: ${range.end}`);
-#     });
-#   });
 
-import logging
-
-#RANDOM TESTING DELETE LATER
-# @food_outlets_blueprint.route('/outlets')
-# def get_all_outlets():
-#     try:
-#         r = requests.get("https://www.uvic.ca/services/food/where/index.php")
-#         if r.status_code != 200:
-#             return jsonify({"error": "Failed to retrieve page"}), 500
-
-#         soup = BeautifulSoup(r.content, 'html.parser')
-#         food_outlets = parse(soup)
-#         formatted_outlets = format_outlet_hours(food_outlets)
-        
-#         # Debug logging
-#         logging.debug(f"Formatted outlets before serialization: {formatted_outlets}")
-        
-#         # Use manual JSON encoding with custom encoder
-#         json_str = json.dumps(formatted_outlets, cls=DateTimeEncoder)
-#         return current_app.response_class(
-#             response=json_str,
-#             status=200,
-#             mimetype='application/json'
-#         )
-#     except Exception as e:
-#         logging.error(f"Error in get_food_outlets: {str(e)}")
-#         return jsonify({"error": str(e)}), 500
 
 @food_outlets_blueprint.route('/food_outlets')
 def get_food_outlets():
@@ -77,11 +36,13 @@ def get_food_outlets():
 
         soup = BeautifulSoup(r.content, 'html.parser')
         food_outlets = parse(soup)
-        is_date = determine_date(food_outlets)
+        is_date = determine_date(food_outlets, datetime.now())
+        print("\n\n",is_date, " \n\n")
+
 
         formatted_outlets = format_outlet_hours(food_outlets)
         # Debug logging
-        logging.debug(f"Formatted outlets before serialization: {formatted_outlets}")
+        # logging.debug(f"Formatted outlets before serialization: {formatted_outlets}")
         
         # Use manual JSON encoding with custom encoder
         json_str = json.dumps(formatted_outlets, cls=DateTimeEncoder)
@@ -95,21 +56,9 @@ def get_food_outlets():
         return jsonify({"error": str(e)}), 500
 
 
-# needs fixing
-# @food_outlets_blueprint.route('/currently_open')
-# def get_currently_open():
-#     r = requests.get("https://www.uvic.ca/services/food/where/index.php")
-#     if r.status_code != 200:
-#         return jsonify({"error": "Failed to retrieve page"}), 500
 
-#     soup = BeautifulSoup(r.content, 'html.parser')
-#     food_outlets = parse(soup)
-
-#     #for now, pass with "friday" block
-#     open_outlets = is_within_date_range(datetime.now().time(), food_outlets['Friday'])
-#     return jsonify(open_outlets)
-
-
+# example usage 
+# /api/currently_open?time=14:20&day=monday
 # split into multiple functions
 @food_outlets_blueprint.route('/currently_open')
 def get_currently_open():
@@ -126,6 +75,7 @@ def get_currently_open():
         # Get custom time from query parameter (format: HH:MM)
         custom_time = request.args.get('time', None)
         custom_day = request.args.get('day', None)
+        # ALSO GET DAY OF MONTH OR JUST MONTH
         
         if custom_time:
             try:
@@ -143,9 +93,6 @@ def get_currently_open():
         else:
             day = calendar.day_name[datetime.now().weekday()]
 
-        # now = datetime.now()
-        # current_time = now.time()
-        # day = calendar.day_name[now.weekday()]
 
         # Map day to schedule block
         if day in ['Saturday', 'Sunday']:
@@ -155,6 +102,7 @@ def get_currently_open():
         else:
             schedule_block = 'Monday - Thursday'
 
+        determine_date(food_outlets, )  
         # Get outlets for current schedule block
         current_outlets = formatted_outlets.get(schedule_block, {})
         
@@ -236,13 +184,6 @@ def format_outlet_hours(food_outlets):
     
     return formatted_outlets
 
-# def clean_text_list(tag):
-#     #NEXT TO DO Made header in <strong> tag and it time a header for the sub outlets in the another json section
-#     text_list = (tag.stripped_strings)
-#     text_list = [text.replace('\u00a0', ' ') for text in text_list]
-#     # text_list = [text.replace('*', '') for text in text_list]
-#     text_list = [text.strip() for text in text_list]
-#     return text_list
 
 
 
@@ -279,12 +220,12 @@ def parse(soup):
                 
                 for row in rows:
                     cols = row.find_all('td')
-                    if len(cols) == 2:  # We expect two columns: outlet name and hours
-                        # Get all text from both columns, preserving line breaks
+                    if len(cols) == 2:  # gets two columns: outlet name and hours
+                        # get all text from both columns, preserving line breaks
                         outlet_names = [text.strip() for text in cols[0].stripped_strings]
                         hours = [text.strip() for text in cols[1].stripped_strings]
                         
-                        # Remove empty strings and special characters
+                        # remove empty strings and special characters
                         outlet_names = [name for name in outlet_names if name and name != '\xa0']
                         hours = [hour for hour in hours if hour and hour != '\xa0']
                         
@@ -305,58 +246,12 @@ def parse(soup):
     time_ranges = copy.deepcopy(food_outlets)
     for day_range in food_outlets:
         for outlet, time_range in food_outlets[day_range].items():
-            print(f"Raw time range for {outlet}: {time_range}")  # Add this line
+            # print(f"Raw time range for {outlet}: {time_range}")  # Add this line
             time_ranges[day_range][outlet] = turn_to_datetime(time_range)
+    # return food_outlets
     return time_ranges
 
-    return food_outlets
-# def parse(soup):
-
-#     """Parse the REGULAR HOURS for the food outlets from the UVic Food Services page."""
-
-#     # Extract information
-#     # food_outlets = dict()
-#     food_outlets = {}
-#     sections = soup.find_all('div', class_='accordions')
-
-#     print(f"header_name: ({header_name})")
-#     tables = section.find_all('table')
-#     print("number of tables: ", len(tables))
-#     for table in tables:
-#         rows = table.find_all('tr')
-#         for row in rows:
-#             cols = row.find_all('td')
-#             if len(cols) == 2:
-                
-#                     # splits the outlet names and hours into a list of strings
-#                     outlet_name = cols[0].get_text(separator="\n", strip=True)
-#                     outlet_name = outlet_name.split('\n')
-                    
-#                     hours = cols[1].get_text(separator="\n", strip=True)
-#                     hours = hours.split('\n')
-                    
-#                     outlet_list  = clean_text(cols[0])
-#                     # outlet_name = outlet_name.split('\n')
-#                     # print(f"outlet_name {outlet_name}")
-                    
-#                     hours_list  = clean_text(cols[1])
-
-#                     print(f"outlet_list {outlet_list}")
-#                     print(f"hours_list {hours_list}")
-
-#                     for outlet, hours in zip(outlet_list, hours_list):
-#                         food_outlets[header_name][outlet] = hours
-                    
-#                     food_outlets[header_name].update(dict(zip(outlet_list , hours_list ))) #adds the outlet name and hours to the dictionary
-#                     print(f"food_outlets: {food_outlets}")
-#     #process hours into date time objects
-#     time_ranges = copy.deepcopy(food_outlets)
-#     for day_range in food_outlets:
-#         for outlet, time_range in food_outlets[day_range].items():
-#             time_ranges[day_range][outlet] = turn_to_datetime(time_range)
-
     
-#     return food_outlets
 
 
 def turn_to_datetime(time_range):
@@ -428,55 +323,9 @@ def turn_to_datetime(time_range):
         print(f"Warning: Error processing time range '{time_range}': {str(e)}")
         return None
 
-#currently doesnt work quite right
-# def turn_to_datetime(time_range):
-#     # print("about to error on time_range: ", time_range)
-#     # Split by comma to handle multiple ranges
-#     if time_range == "Closed":
-#         return None
-#     range_groups = time_range.split(',')  # e.g., "11am-2pm, 5pm-10-pm" -> ["11am-2pm", "5pm-10-pm"]
-#     all_ranges = []
-
-#     for group in range_groups:
-#         ranges = group.strip().split('-')
-        
-#         # Merge improperly split parts like "10" and "pm" in "10-pm"
-#         normalized_ranges = []
-#         i = 0
-#         while i < len(ranges):
-#             if i + 1 < len(ranges) and (ranges[i+1].strip().upper() in ["AM", "PM"] or ranges[i+1].strip().endswith(("AM", "PM"))):
-#                 normalized_ranges.append(ranges[i] + ranges[i+1])
-#                 i += 2
-#             else:
-#                 normalized_ranges.append(ranges[i])
-#                 i += 1
-        
-#         if len(normalized_ranges) != 2:
-#             raise ValueError(f"Invalid time range format: {group}")
-        
-#         processed_range = []
-#         for time in normalized_ranges:
-#             time = time.replace("\u00a0", "").strip().upper()  # Normalize and clean up
-#             time = time.replace(':AM', 'AM').replace(':PM', 'PM')  # Fix incorrect colon usage
-
-#             if not any(char in time for char in [':', 'AM', 'PM']):
-#                 raise ValueError(f"Invalid time format: {time}")
-
-#             if ':' not in time:
-#                 time = time[:-2] + ':00' + time[-2:]  # Add ':00' for missing minutes
-            
-#             try:
-#                 parsed_time = datetime.strptime(time, "%I:%M%p").time()
-#                 processed_range.append(parsed_time)
-#             except ValueError:
-#                 raise ValueError(f"Invalid time format: {time}")
-
-#         all_ranges.append(tuple(processed_range))
-        
-
-#     return all_ranges  # Returns a list of time tuples
 
 
+# currently not used
 def is_within_date_range(current_date, food_outlets):
     open_outlets = {}
 
@@ -495,13 +344,16 @@ def is_within_date_range(current_date, food_outlets):
     return open_outlets
 
 
-def determine_date(food_outlets):
+def determine_date(food_outlets, date=None):
 
-    current_date = datetime.now()
+    if date == None:
+        current_date = datetime.now()
+    else:
+        current_date = date
 
     shortened_month = current_date.strftime('%b')
     day_of_week = current_date.strftime('%A')
-    day_of_month = current_date.strftime('%d')
+    day_of_month = int(current_date.strftime('%d'))
 
     for key in food_outlets:
         if re.match(f"^{day_of_week},* {shortened_month} {day_of_month}$", key):

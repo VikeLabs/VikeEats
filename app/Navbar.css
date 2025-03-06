@@ -1,0 +1,27 @@
+.navbar {
+    @apply flex justify-between items-center bg-white text-primary-dark fixed top-0 left-0 w-full max-w-full z-10 shadow-lg font-header-regular text-base
+}
+
+.logo {
+    @apply flex items-center ml-10 text-xl
+}
+
+.nav-links {
+    @apply mr-9
+}
+
+.nav-links a {
+    @apply block p-2 text-primary-dark no-underline text-opacity-75
+}
+
+.nav-links a:hover {
+    @apply text-opacity-100 transition duration-300 ease-in-out
+}
+
+.bold {
+    @apply font-extrabold
+}
+
+.nav-links li {
+    @apply inline-block
+}
