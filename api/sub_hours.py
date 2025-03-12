@@ -42,12 +42,14 @@ def get_sub_menu():
         for day in days:
             start_time,end_time = hours_to_datetime(hours)
             if start_time == None:
-                sub_hours[day][name] = {"isClosed":True,
+                sub_hours[day][name] = {"Building":"The Sub",
+                                        "isClosed":True,
                                         "rawHours":[{"start":None,
                                                     "end":None}],
                                         "displayHours":"Closed :)"}
             else:
-                sub_hours[day][name] = {"isClosed":False,
+                sub_hours[day][name] = {"Building":"The Sub",
+                                        "isClosed":False,
                                         "rawHours":[{"start":f"{start_time.strftime('%I:%M %p')}",
                                                     "end":f"{end_time.strftime('%I:%M %p')}"}],
                                         "displayHours":f"{start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}"}
