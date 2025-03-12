@@ -2,6 +2,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, Blueprint, Response, jsonify
+from datetime import datetime
 
 sub_hours_blueprint = Blueprint('sub_hours', __name__)
 app = Flask(__name__)
@@ -39,7 +40,38 @@ def get_sub_menu():
     # a function to quickly update sub_hours dict
     def update_sub_hours(days, name, hours):
         for day in days:
-            sub_hours[day][name] = hours
+            start_time,end_time = hours_to_datetime(hours)
+            if start_time == None:
+                sub_hours[day][name] = {"isClosed":True,
+                                        "rawHours":[{"start":None,
+                                                    "end":None}],
+                                        "displayHours":"Closed :)"}
+            else:
+                sub_hours[day][name] = {"isClosed":False,
+                                        "rawHours":[{"start":f"{start_time.strftime('%I:%M %p')}",
+                                                    "end":f"{end_time.strftime('%I:%M %p')}"}],
+                                        "displayHours":f"{start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}"}
+    
+    def hours_to_datetime(time_range:str):
+        # Handle the "Closed" case
+        if time_range.strip().lower() == "closed":
+            return None, None
+        
+        # Normalize the delimiter by replacing variations with a standard one
+        time_range = time_range.replace('–', '-').replace(' ', '')
+        
+        # Split the input string into start and end time strings
+        start_str, end_str = time_range.split('-')
+        
+        # Define the format for parsing the time strings
+        time_format = "%I:%M%p"
+        
+        # Parse the start and end times into datetime objects
+        start = datetime.strptime(start_str, time_format)
+        end = datetime.strptime(end_str, time_format)
+        
+        return start, end
+
 
     # go through all of the individual dicts, and combine them into one, where the key is the
     # day of the week, and the value is the name and hours
@@ -58,7 +90,7 @@ def get_sub_menu():
             elif 'Monday – Friday' in key:
                 update_sub_hours(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], name, hours)
     
-    # manually convert sub_hours to dict, as jsonify hates special characters
+    # manually convert sub_hours to json, as jsonify hates special characters
     json_output = json.dumps(sub_hours, ensure_ascii=False, indent=4)
     return Response(json_output, mimetype='application/json')
 
@@ -96,9 +128,10 @@ def bean_there(soup):
         print("Hours not found.")
         return bean_there_dict
     hours = hours.strip()
-    
+    days_add_weekend = [days,"Saturday & Sunday"]
     # Add the name and hours to the dictionary
-    bean_there_dict[days] = {name: hours}
+    bean_there_dict[days_add_weekend[0]] = {name: hours}
+    bean_there_dict[days_add_weekend[1]] = {name: "Closed"}
     
     return bean_there_dict
 
@@ -183,8 +216,10 @@ def the_grill(soup):
         return the_grill_dict
     hours = hours.strip()
     
+    days_add_weekend = [days,"Saturday & Sunday"]
     # Add the name and hours to the dictionary
-    the_grill_dict[days] = {name: hours}
+    the_grill_dict[days_add_weekend[0]] = {name: hours}
+    the_grill_dict[days_add_weekend[1]] = {name: "Closed"}
     
     return the_grill_dict
 
@@ -284,8 +319,10 @@ def health_food_bar(soup):
         return hfb_dict
     hours = hours.strip()
     
+    days_add_weekend = [days,"Saturday & Sunday"]
     # Add the name and hours to the dictionary
-    hfb_dict[days] = {name: hours}
+    hfb_dict[days_add_weekend[0]] = {name: hours}
+    hfb_dict[days_add_weekend[1]] = {name: "Closed"}
     
     return hfb_dict
 
