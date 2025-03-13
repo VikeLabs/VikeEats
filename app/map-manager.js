@@ -15,8 +15,9 @@ import { Map, View } from "ol";
 import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 import { fromLonLat } from "ol/proj";
+import { UVIC_COORDINATES, MAP_ZOOM_LEVEL } from './config';
 
-// Singleton map instance
+//Globals
 let mapInstance = null;
 
 /**
@@ -29,6 +30,7 @@ let mapInstance = null;
 export const getMapInstance = (target) => {
   // Prevent execution in non-browser environments
   if (typeof window === "undefined") {
+    console.error("getMapInstance cannot be executed in a non-browser environment.");
     return null;
   }
 
@@ -41,8 +43,8 @@ export const getMapInstance = (target) => {
         }),
       ],
       view: new View({
-        center: fromLonLat([-123.31219, 48.46319]), // UVic coordinates
-        zoom: 16,
+        center: fromLonLat(UVIC_COORDINATES), // UVic coordinates
+        zoom: MAP_ZOOM_LEVEL,
       }),
     });
   }

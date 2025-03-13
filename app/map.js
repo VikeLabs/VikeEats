@@ -14,6 +14,7 @@
 import React, { useEffect, useRef } from 'react';
 import 'ol/ol.css';
 import { getMapInstance } from './map-manager';
+import './map.css'
 
 /**
  * MapLayer Component
@@ -32,7 +33,7 @@ const MapLayer = React.forwardRef((props, ref) => {
   useEffect(() => {
     // Create the map using function in map-manager.js
     const map = getMapInstance(mapElement.current);
-
+    
     if (ref) {
       // Updates ref with the map instance
       ref.current = map;
@@ -44,6 +45,7 @@ const MapLayer = React.forwardRef((props, ref) => {
 
   return (
     <div
+      className="map-container"
       ref={mapElement}
       style={{
         position: 'absolute',
@@ -52,6 +54,7 @@ const MapLayer = React.forwardRef((props, ref) => {
         width: '100%',
         height: '100%',
       }}
+
     ></div>
   );
 });

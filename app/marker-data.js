@@ -8,6 +8,13 @@
  * - Provides predefined marker locations with longitude and latitude coordinates.
  * - Assigns each marker to one or more filterable categories.
  * - Can be used in mapping components to display markers dynamically.
+ * 
+ * Data Structure:
+ * Each marker object in the "markerData" array contains the following keys:
+ * 
+ * - id: {number} Unique identifier for the marker.
+ * - categories: {string[]} Array of category labels for filtering.
+ * - coords: {number[]} Array containing the longitude and latitude coordinates (in that order).
  */
 
 export const markerData = [

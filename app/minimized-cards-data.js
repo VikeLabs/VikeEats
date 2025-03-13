@@ -8,6 +8,16 @@
  * - Provides predefined store details including name, hours, and dietary accommodations.
  * - Supports category-based filtering for UI components.
  * - Includes image URLs for display in components.
+ * 
+ * Data Structure:
+ * Each store object in the "stores" array contains the following keys:
+ * 
+ * - id: {number} Unique identifier for the store.
+ * - supportedDiets: {string[]} Array of strings representing the dietary options supported by the store.
+ * - categories: {string[]} Array of category labels for filtering.
+ * - name: {string} The name of the store.
+ * - time: {string} Operating hours for the store (e.g., "9am - 5pm").
+ * - image: {string} URL string linking to an image representing the store.
  */
 
 export const stores = [

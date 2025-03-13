@@ -31,11 +31,12 @@ const App = () => {
       *For test only
       *Displays the data from backend nicely
        */}
+{/*        
       <div>
         {foodOutletsData ? (
-          <div>
+          <div> */}
             {/* Loop through each day and display food outlets with their schedule */}
-            {Object.entries(foodOutletsData).map(([day, outlets]) => (
+            {/* {Object.entries(foodOutletsData).map(([day, outlets]) => (
               <div
                 key={day}
                 style={{
@@ -45,9 +46,9 @@ const App = () => {
                 }}
               >
                 <h2>{day}</h2>
-                <ul>
+                <ul> */}
                   {/* Loop through each outlet and display its hours */}
-                  {Object.entries(outlets).map(([outlet, hours]) => (
+                  {/* {Object.entries(outlets).map(([outlet, hours]) => (
                     <li key={outlet}>
                       <strong>{outlet}:</strong> {hours}
                     </li>
@@ -59,14 +60,14 @@ const App = () => {
         ) : (
           <p>Loading food outlet schedule...</p>
         )}
-      </div>
+      </div>  */}
       
       {/* Uncomment these components to see the app */}
-      {/* <MapLayer /> */}
-      {/* <MarkerLayer /> */}
-      {/* <FilterButtons /> */}
-      {/* <NavBar /> */}
-      {/* <MinimizedCards /> */}
+      <MapLayer />
+      <MarkerLayer />
+      <FilterButtons />
+      <NavBar />
+      <MinimizedCards />
     </div>
   );
 };

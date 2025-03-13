@@ -41,24 +41,44 @@ export const useCategory = () => {
 
   /**
    * Toggles a category selection.
-   * If `newCategory` is null, it clears all selections.
+   * Special logic:
+   * - When a non-"all" category is selected, the "all" filter is automatically deselected.
+   * - When the "all" category is selected, all other filters are deselected.
+   * - If toggling a non-"all" category results in no filters being selected, defaults back to "all".
    * 
    * @param {string|null} newCategory - The category to toggle, or null to clear selection.
    */
   const toggleCategory = (newCategory) => {
     if (newCategory === null) {
-      // Clear all selections
-      selectedCategories = [];
-      listeners.forEach((listener) => listener([]));
+      // Reset selection to default: "all"
+      selectedCategories = ["all"];
+      listeners.forEach((listener) => listener(selectedCategories));
       return;
     }
 
-    // Toggle category selection
-    const updated = selectedCategories.includes(newCategory)
-      ? selectedCategories.filter((cat) => cat !== newCategory)
-      : [...selectedCategories, newCategory];
+    if (newCategory === "all") {
+      // When "all" is selected, deselect all other filters.
+      selectedCategories = ["all"];
+      listeners.forEach((listener) => listener(selectedCategories));
+      return;
+    }
 
-    // Update global state and notify listeners
+    // For non-"all" categories, first remove "all" if it's currently selected.
+    let updated = selectedCategories.filter(cat => cat !== "all");
+
+    // Toggle the newCategory
+    if (updated.includes(newCategory)) {
+      updated = updated.filter(cat => cat !== newCategory);
+    } else {
+      updated.push(newCategory);
+    }
+
+    // If no non-"all" category remains selected, default back to "all"
+    if (updated.length === 0) {
+      updated = ["all"];
+    }
+
+    // Update the global state and notify all listeners.
     selectedCategories = updated;
     listeners.forEach((listener) => listener(updated));
   };
