@@ -23,7 +23,7 @@ app = Flask(__name__)
 #     return "Hello World"
 #     # return render_template('index.html')
 
-@food_outlets_blueprint.route('/food_outlets')
+@food_outlets_blueprint.route('/food_outlets', methods=['GET'])
 def get_food_outlets():
     r = requests.get("https://www.uvic.ca/services/food/where/index.php")
     if r.status_code != 200:

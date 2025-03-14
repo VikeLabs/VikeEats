@@ -5,12 +5,12 @@ from bs4 import BeautifulSoup
 # Create a blueprint for menus
 menu_blueprint = Blueprint('menu', __name__)
 
-@menu_blueprint.route('/menu')
+@menu_blueprint.route('/menu', methods=['GET'])
 def menu_home():
     # return url_for('menu.cove_menu'), url_for('menu.mystic_menu')
     return "Welcome to the menu page <br>" + "<br>Cove Menu: " + url_for('menu.cove_menu') + "<br>Mystic Menu: " + url_for('menu.mystic_menu')
 
-@menu_blueprint.route('/menu/cove')
+@menu_blueprint.route('/menu/cove', methods=['GET'])
 def cove_menu():
     #TODO: Implement this function
 
@@ -29,7 +29,7 @@ def cove_menu():
     ]
     return jsonify(menu_items)
 
-@menu_blueprint.route('/menu/mystic')
+@menu_blueprint.route('/menu/mystic', methods=['GET'])
 def mystic_menu():
     #TODO: Implement this function
 
