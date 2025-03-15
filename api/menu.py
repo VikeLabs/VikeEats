@@ -145,7 +145,6 @@ def parse(soup, location):
             #get dietary restriction information
             item_div = item.find_next_sibling('div')
             dietary_icons = item_div.find_all('img')
-            print(len(dietary_icons))
             dietary_restrictions = []
             #find which icons apply
             for icon in dietary_icons:
@@ -157,7 +156,6 @@ def parse(soup, location):
                     dietary_restrictions.append('gluten free')
                 elif 'dairy-free' in icon['src']:
                     dietary_restrictions.append('dairy free')
-            print(dietary_restrictions)
 
             #get ingredients and allergens
             p_tags = item_div.find_all('p')
@@ -226,7 +224,6 @@ def parse_cove_alt(soup, location):
         #get dietary restriction information
         
         dietary_icons = item_div.find_all('img')
-        print(len(dietary_icons))
         dietary_restrictions = []
         #find which icons apply
         for icon in dietary_icons:
@@ -240,7 +237,6 @@ def parse_cove_alt(soup, location):
                 dietary_restrictions.append('dairy free')
             elif 'halal' in icon['src']:
                 dietary_restrictions.append('halal')
-        print(dietary_restrictions)
 
         #get ingredients and allergens
         p_tags = item_div.find_all('p')
