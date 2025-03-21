@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine, insert, ForeignKey, MetaData, Table, Column, Integer, Boolean, VARCHAR, TEXT
+from sqlalchemy import create_engine, insert, ForeignKey, MetaData, Table, Column, Integer, Boolean, VARCHAR, TEXT,select
 import sub_hours
+from .food_outlets import get_food_outlets
 import create_db
 import json
 from flask import Flask, Blueprint, Response, jsonify
@@ -18,6 +19,22 @@ def db_main():
 def db_create():
     create_db.create_database()
     return jsonify("Database Created :)")
+
+#Funtion to merge dictionaries
+def merge_dicts(dict1, dict2):
+    """
+    Recursively merge two dictionaries.
+    If a key exists in both dictionaries and the values are dictionaries, merge them recursively.
+    Otherwise, keep the value from dict2 (overwrite dict1).
+    """
+    for key, value in dict2.items():
+        if key in dict1 and isinstance(dict1[key], dict) and isinstance(value, dict):
+            # If both values are dictionaries, merge them recursively
+            merge_dicts(dict1[key], value)
+        else:
+            # Otherwise, overwrite dict1's value with dict2's value
+            dict1[key] = value
+    return dict1
 
 '''
 Updates FoodOutlets in DB
@@ -47,44 +64,20 @@ def db_ufo():
     metadata_obj.reflect(bind=engine)
 
     food_outlets = metadata_obj.tables["food_outlets"]
-    operating_hours = metadata_obj.tables["operating_hours"]
-    time_slots = metadata_obj.tables["time_slots"]
 
     # Inputing sub food outlets into the DB
     sub_hours_dict = sub_hours.get_sub_hours()
-    for name in sub_hours_dict['Monday']:
-        db_insert = food_outlets.insert().values(name=name, location=sub_hours_dict['Monday'][name]['Building'])
-        with engine.connect() as conn:
-            conn.execute(db_insert)
-            conn.commit()
-
-    # Inputing sub operating hours into the DB
-    for day in sub_hours_dict:
-        for name in sub_hours_dict[day]:
-            with engine.connect() as conn:
-                food_outlet_id = conn.execute(food_outlets.select().where(food_outlets.c.name == name)).scalar()
-                db_insert = operating_hours.insert().values(food_outlet_id=food_outlet_id,
-                                                             day=day,
-                                                             is_closed=sub_hours_dict[day][name]['isClosed'],
-                                                             display_hours=sub_hours_dict[day][name]['displayHours'])
-                conn.execute(db_insert)
-                conn.commit()
-
-    # Inputing sub timeslots into the DB
-    for day in sub_hours_dict:
-        for name in sub_hours_dict[day]:
-            with engine.connect() as conn:
-                operating_hours_id = conn.execute(operating_hours.select().where(operating_hours.c.food_outlet_id == food_outlets.c.id)).scalar()
-                if sub_hours_dict[day][name]['rawHours'][0]['start'] is None:
-                    db_insert = time_slots.insert().values(operating_hours_id=operating_hours_id,
-                                                           start_time='None',
-                                                           end_time='None')
-                else:
-                    db_insert = time_slots.insert().values(operating_hours_id=operating_hours_id,
-                                                           start_time=sub_hours_dict[day][name]['rawHours'][0]['start'],
-                                                           end_time=sub_hours_dict[day][name]['rawHours'][0]['end'])
-                conn.execute(db_insert)
-                conn.commit()
+    with engine.connect() as conn:
+        for day in sub_hours_dict:
+            for name in sub_hours_dict[day]:
+                existing_entry = conn.execute(
+                    food_outlets.select().where(
+                        (food_outlets.c.name == name)
+                    )).fetchone()
+                if not existing_entry:
+                    db_insert = food_outlets.insert().values(name=name, location=sub_hours_dict[day][name]['Building'])
+                    conn.execute(db_insert)
+        conn.commit()
 
     result = engine.connect().execute(food_outlets.select())
     row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
@@ -123,18 +116,28 @@ def db_uoh():
     operating_hours = metadata_obj.tables["operating_hours"]
 
     # Inputing sub operating hours into the DB
-    for day in sub_hours_dict:
-        for name in sub_hours_dict[day]:
-            with engine.connect() as conn:
-                food_outlet_id = conn.execute(food_outlets.select().where(food_outlets.c.name == name)).scalar()
-                db_insert = operating_hours.insert().values(food_outlet_id=food_outlet_id,
-                                                             day=day,
-                                                             is_closed=sub_hours_dict[day][name]['isClosed'],
-                                                             display_hours=sub_hours_dict[day][name]['displayHours'])
-                conn.execute(db_insert)
-                conn.commit()
+    with engine.connect() as conn:
+        for day in sub_hours_dict:
+            for name in sub_hours_dict[day]:
+                food_outlet_id = conn.execute(
+                        select(food_outlets.c.id).where(food_outlets.c.name == name)
+                    ).scalar()
+                
+                existing_entry = conn.execute(
+                    operating_hours.select().where(
+                        (operating_hours.c.food_outlet_id == food_outlet_id) &
+                        (operating_hours.c.day == day)
+                    )).fetchone()
+                
+                if not existing_entry:
+                    db_insert = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                    day=day,
+                                                                    is_closed=sub_hours_dict[day][name]['isClosed'],
+                                                                    display_hours=sub_hours_dict[day][name]['displayHours'])
+                    conn.execute(db_insert)
+        conn.commit()
 
-    result = engine.connect().execute(food_outlets.select())
+    result = engine.connect().execute(operating_hours.select())
     row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
     return row_dict
 
@@ -173,20 +176,45 @@ def db_uts():
     time_slots = metadata_obj.tables["time_slots"]
 
     # Inputing sub timeslots into the DB
-    for day in sub_hours_dict:
-        for name in sub_hours_dict[day]:
-            with engine.connect() as conn:
-                operating_hours_id = conn.execute(operating_hours.select().where(operating_hours.c.food_outlet_id == food_outlets.c.id)).scalar()
-                if sub_hours_dict[day][name]['rawHours'][0]['start'] is None:
-                    db_insert = time_slots.insert().values(operating_hours_id=operating_hours_id,
-                                                           start_time='None',
-                                                           end_time='None')
+    with engine.connect() as conn:
+        for day in sub_hours_dict:
+            for name in sub_hours_dict[day]:
+                # Fetch the food_outlet_id
+                food_outlet_id = conn.execute(
+                    select(food_outlets.c.id).where(food_outlets.c.name == name)
+                ).scalar()
+
+                # Fetch the operating_hours_id for the given food_outlet_id and day
+                operating_hours_id = conn.execute(
+                    select(operating_hours.c.id).where(
+                        (operating_hours.c.food_outlet_id == food_outlet_id) &
+                        (operating_hours.c.day == day)
+                    )
+                ).scalar()
+
+                # If operating_hours_id is not found, you might want to handle that case
+                if operating_hours_id is None:
+                    print(f"No operating hours found for {name} on {day}")
+                    continue
+
+                # Insert into time_slots
+                if sub_hours_dict[day][name]['rawHours'] is None:
+                    db_insert = time_slots.insert().values(
+                        operating_hours_id=operating_hours_id,
+                        start_time=None,
+                        end_time=None
+                    )
                 else:
-                    db_insert = time_slots.insert().values(operating_hours_id=operating_hours_id,
-                                                           start_time=sub_hours_dict[day][name]['rawHours'][0]['start'],
-                                                           end_time=sub_hours_dict[day][name]['rawHours'][0]['end'])
+                    db_insert = time_slots.insert().values(
+                        operating_hours_id=operating_hours_id,
+                        start_time=sub_hours_dict[day][name]['rawHours'][0]['start'],
+                        end_time=sub_hours_dict[day][name]['rawHours'][0]['end']
+                    )
+
                 conn.execute(db_insert)
-                conn.commit()
+
+        # Commit the transaction
+        conn.commit()
 
     result = engine.connect().execute(time_slots.select())
     row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}

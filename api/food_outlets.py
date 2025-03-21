@@ -7,10 +7,10 @@ import re
 from collections import OrderedDict
 
 
-from flask import Flask, jsonify, current_app, request
+from flask import Flask, jsonify, current_app, request, Response
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from flask import Blueprint
 import copy
 import logging
@@ -28,6 +28,12 @@ app = Flask(__name__)
 
 
 @food_outlets_blueprint.route('/food_outlets')
+def return_food_outlets():
+    food_outlets = get_food_outlets()
+
+    json_output = json.dumps(food_outlets, ensure_ascii=False, indent=4)
+    return Response(json_output, mimetype='application/json')
+
 def get_food_outlets():
     try:
         r = requests.get("https://www.uvic.ca/services/food/where/index.php")
@@ -38,19 +44,15 @@ def get_food_outlets():
         food_outlets = parse(soup)
         is_date = determine_date(food_outlets, datetime.now())
         print("\n\n",is_date, " \n\n")
-
-
         formatted_outlets = format_outlet_hours(food_outlets)
-        # Debug logging
-        # logging.debug(f"Formatted outlets before serialization: {formatted_outlets}")
-        
         # Use manual JSON encoding with custom encoder
-        json_str = json.dumps(formatted_outlets, cls=DateTimeEncoder)
-        return current_app.response_class(
-            response=json_str,
-            status=200,
-            mimetype='application/json'
-        )
+        
+        return formatted_outlets
+
+        #json_str = json.dumps(formatted_outlets, cls=DateTimeEncoder)
+        #return current_app.response_class(response=json_str,status=200,mimetype='application/json')
+
+
     except Exception as e:
         logging.error(f"Error in get_food_outlets: {str(e)}")
         return jsonify({"error": str(e)}), 500

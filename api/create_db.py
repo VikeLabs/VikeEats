@@ -27,8 +27,8 @@ def create_database():
         "time_slots", metadata_obj,
         Column("id", Integer, primary_key=True),
         Column("operating_hours_id", Integer, ForeignKey("operating_hours.id"), nullable=False),
-        Column("start_time", VARCHAR, nullable=False),
-        Column("end_time", VARCHAR, nullable=False)
+        Column("start_time", VARCHAR),
+        Column("end_time", VARCHAR)
     )
 
     # Menu for each food outlet
