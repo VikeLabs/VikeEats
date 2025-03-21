@@ -5,6 +5,7 @@ import MinimizedCards from "./minimized-cards";
 import FilterButtons from "./first-level-filter";
 import MapLayer from "./map";
 import MarkerLayer from "./marker";
+import UserLocationMarker from "./UserLocationMarker";
 
 /**
  * The main application component.
@@ -65,6 +66,7 @@ const App = () => {
       {/* Uncomment these components to see the app */}
       <MapLayer />
       <MarkerLayer />
+      <UserLocationMarker />
       <FilterButtons />
       <NavBar />
       <MinimizedCards />
