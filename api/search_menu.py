@@ -5,24 +5,35 @@ from api.menu import mystic_cove_menu_dict
 # Create a blueprint for search
 search_blueprint = Blueprint('search', __name__)
 
-#SEARCH STUFF
 @search_blueprint.route('/search')
 def search_menu():
+    """ 
+    Entry function for searching - parses search parameters for restrictions, food outlets, and menu items, and passes them to the search() function
+    Returns a JSON of the search results
+    """
 
     #search by dietary restrictions
-    restriction = request.args.get('restriction').replace('-', ' ')
+    restriction = request.args.get('restriction')
+    if restriction is not None:
+        restriction = restriction.replace('-', ' ')
 
     #search by food outlet
     food_outlet = request.args.get('food-outlet')
 
     #search by menu item
-    menu_item = request.args.get('menu-item').lower().replace('-', ' ')
+    menu_item = request.args.get('menu-item')
+    if menu_item is not None:
+        menu_item = menu_item.lower().replace('-', ' ')
 
     return jsonify(search(restriction, food_outlet, menu_item))
 
 
-#returns all the menu items that are safe for the specified dietary restriction (e.g. vegan), grouped by food outlet
+#returns all the menu items, searched by dietary restriction, food outlet, and menu item
 def search(restriction, food_outlet, menu_item):
+    """
+    Takes parameters for dietary restriction, food outlets, and menu items
+    Returns a dictionary of the search results from both the Cove and Mystic Market
+    """
 
     selected_menu_items = {}
     mystic_locations = ['Chopbox', 'Fresco Taco', 'Flamin Good Chicken', 'Pickle and Spice']
@@ -44,6 +55,11 @@ def search(restriction, food_outlet, menu_item):
 
 
 def search_through_food_outlet(locations, url, restriction, searched_menu_item):
+    """
+    Searches a particular food outlet for a given restriction and/or menu item
+    Returns a dictionary of the search results
+    """
+
     selected_menu_items = {}
     #loop through all locations
     for location in locations:
@@ -56,9 +72,9 @@ def search_through_food_outlet(locations, url, restriction, searched_menu_item):
             for key, value in menu_items.items():
                 #filter by menu item(s) if specified
                 if (searched_menu_item is not None and searched_menu_item in key.lower()) or searched_menu_item is None:
-
                     restrictions = value.get('dietary restrictions')
-                    if restrictions is not None and restriction in restrictions:
+                    #filter by dietary restriction if specified
+                    if restriction is None or (restrictions is not None and restriction in restrictions):
                         if location not in selected_menu_items:
                             selected_menu_items[location] = {}
                         selected_menu_items.get(location).update({key: value})
@@ -69,7 +85,8 @@ def search_through_food_outlet(locations, url, restriction, searched_menu_item):
                     #filter by menu item(s) if specified
                     if (searched_menu_item is not None and searched_menu_item in key.lower()) or searched_menu_item is None:
                         restrictions = value.get('dietary restrictions')
-                        if restrictions is not None and restriction in restrictions:
+                        #filter by dietary restriction if specified
+                        if restriction is None or (restrictions is not None and restriction in restrictions):
                             if location not in selected_menu_items:
                                 selected_menu_items[location] = {}
                             if category not in selected_menu_items.get(location):  
