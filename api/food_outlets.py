@@ -31,7 +31,7 @@ app = Flask(__name__)
 def return_food_outlets():
     food_outlets = get_food_outlets()
 
-    json_output = json.dumps(food_outlets, ensure_ascii=False, indent=4)
+    json_output = json.dumps(food_outlets, ensure_ascii=False, indent=4, cls=DateTimeEncoder)
     return Response(json_output, mimetype='application/json')
 
 def get_food_outlets():
@@ -186,9 +186,6 @@ def format_outlet_hours(food_outlets):
     
     return formatted_outlets
 
-
-
-
 def parse(soup):
     """Parse the REGULAR HOURS for the food outlets from the UVic Food Services page."""
     food_outlets = {}
@@ -252,9 +249,6 @@ def parse(soup):
             time_ranges[day_range][outlet] = turn_to_datetime(time_range)
     # return food_outlets
     return time_ranges
-
-    
-
 
 def turn_to_datetime(time_range):
     """
@@ -325,8 +319,6 @@ def turn_to_datetime(time_range):
         print(f"Warning: Error processing time range '{time_range}': {str(e)}")
         return None
 
-
-
 # currently not used
 def is_within_date_range(current_date, food_outlets):
     open_outlets = {}
@@ -344,7 +336,6 @@ def is_within_date_range(current_date, food_outlets):
                 open_outlets[outlet] = food_outlets[outlet]
     
     return open_outlets
-
 
 def determine_date(food_outlets, date=None):
 

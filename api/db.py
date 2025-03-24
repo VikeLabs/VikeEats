@@ -5,6 +5,7 @@ import create_db
 import json
 from flask import Flask, Blueprint, Response, jsonify
 import os
+import re
 
 db_blueprint = Blueprint('db', __name__)
 app = Flask(__name__)
@@ -20,7 +21,7 @@ def db_create():
     create_db.create_database()
     return jsonify("Database Created :)")
 
-#Funtion to merge dictionaries
+# Funtion to merge dictionaries
 def merge_dicts(dict1, dict2):
     """
     Recursively merge two dictionaries.
@@ -35,6 +36,28 @@ def merge_dicts(dict1, dict2):
             # Otherwise, overwrite dict1's value with dict2's value
             dict1[key] = value
     return dict1
+
+# Function to Normlize outlets names
+def normalize_name(name):
+    # Convert to lowercase
+    name = name.lower()
+    
+    # Remove any trailing asterisks and whitespace
+    name = re.sub(r'\*+$', '', name).strip()
+    
+    # Standardize apostrophes and quotes
+    name = name.replace("’", "'").replace('"', "'")
+    
+    # Remove extra whitespace
+    name = ' '.join(name.split())
+    
+    # Specific case handling (optional)
+    if "bibliocafe" in name:
+        return "bibliocafe"
+    if "fresco taco ban" in name:
+        return "fresco"
+    
+    return name
 
 '''
 Updates FoodOutlets in DB
@@ -72,10 +95,24 @@ def db_ufo():
             for name in sub_hours_dict[day]:
                 existing_entry = conn.execute(
                     food_outlets.select().where(
-                        (food_outlets.c.name == name)
+                        (food_outlets.c.name == normalize_name(name))
                     )).fetchone()
                 if not existing_entry:
-                    db_insert = food_outlets.insert().values(name=name, location=sub_hours_dict[day][name]['Building'])
+                    db_insert = food_outlets.insert().values(name=normalize_name(name), location=sub_hours_dict[day][name]['Building'])
+                    conn.execute(db_insert)
+        conn.commit()
+    
+    # Inputing UVic food outlets into the DB
+    uvic_hours_dict = get_food_outlets()
+    with engine.connect() as conn:
+        for day_range in uvic_hours_dict:
+            for name in uvic_hours_dict[day_range]:
+                existing_entry = conn.execute(
+                    food_outlets.select().where(
+                        (food_outlets.c.name == normalize_name(name))
+                    )).fetchone()
+                if not existing_entry:
+                    db_insert = food_outlets.insert().values(name=normalize_name(name), location='Unknown')
                     conn.execute(db_insert)
         conn.commit()
 
@@ -112,6 +149,7 @@ def db_uoh():
     metadata_obj.reflect(bind=engine)
 
     sub_hours_dict = sub_hours.get_sub_hours()
+    uvic_hours_dict = get_food_outlets()
     food_outlets = metadata_obj.tables["food_outlets"]
     operating_hours = metadata_obj.tables["operating_hours"]
 
@@ -120,7 +158,7 @@ def db_uoh():
         for day in sub_hours_dict:
             for name in sub_hours_dict[day]:
                 food_outlet_id = conn.execute(
-                        select(food_outlets.c.id).where(food_outlets.c.name == name)
+                        select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(name))
                     ).scalar()
                 
                 existing_entry = conn.execute(
@@ -135,6 +173,81 @@ def db_uoh():
                                                                     is_closed=sub_hours_dict[day][name]['isClosed'],
                                                                     display_hours=sub_hours_dict[day][name]['displayHours'])
                     conn.execute(db_insert)
+        conn.commit()
+
+    # Inputing uvic operating hours into the DB
+    with engine.connect() as conn:
+        for day_range in uvic_hours_dict:
+            for name in uvic_hours_dict[day_range]:
+                if day_range == "Monday - Thursday":
+                    #For existing entry purposes, if an entry exists on monday it will exist Monday-Thursday
+                    day = 'Monday'
+                elif day_range == "Saturday - Sunday":
+                    #For existing entry purposes, if an entry exists on saturday it will exist on sunday
+                    day = 'Saturday - Sunday'
+                else:
+                    day = day_range
+
+                food_outlet_id = conn.execute(
+                        select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(name))
+                    ).scalar()
+                
+                existing_entry = conn.execute(
+                    operating_hours.select().where(
+                        (operating_hours.c.food_outlet_id == food_outlet_id) &
+                        (operating_hours.c.day == day)
+                    )).fetchone()
+                
+                if not existing_entry:
+                    if day_range == "Monday - Thursday":
+                        # Insert for monday
+                        db_insert_mon = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                        day='Monday',
+                                                                        is_closed=uvic_hours_dict[day_range][name]['isClosed'],
+                                                                        display_hours=uvic_hours_dict[day_range][name]['displayHours'])
+                        conn.execute(db_insert_mon)
+
+                        # Insert for tuesday
+                        db_insert_tue = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                        day='Tuesday',
+                                                                        is_closed=uvic_hours_dict[day_range][name]['isClosed'],
+                                                                        display_hours=uvic_hours_dict[day_range][name]['displayHours'])
+                        conn.execute(db_insert_tue)
+
+                        # Insert for wednesday
+                        db_insert_wed = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                        day='Wednesday',
+                                                                        is_closed=uvic_hours_dict[day_range][name]['isClosed'],
+                                                                        display_hours=uvic_hours_dict[day_range][name]['displayHours'])
+                        conn.execute(db_insert_wed)
+
+                        # Insert for thursday
+                        db_insert_thur = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                        day='Thursday',
+                                                                        is_closed=uvic_hours_dict[day_range][name]['isClosed'],
+                                                                        display_hours=uvic_hours_dict[day_range][name]['displayHours'])
+                        conn.execute(db_insert_thur)
+                    elif day_range == 'Saturday - Sunday':
+                        # Insert for saturday
+                        db_insert_sat = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                        day='Saturday',
+                                                                        is_closed=uvic_hours_dict[day_range][name]['isClosed'],
+                                                                        display_hours=uvic_hours_dict[day_range][name]['displayHours'])
+                        conn.execute(db_insert_sat)
+
+                        # Insert for sunday
+                        db_insert_sun = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                        day='Sunday',
+                                                                        is_closed=uvic_hours_dict[day_range][name]['isClosed'],
+                                                                        display_hours=uvic_hours_dict[day_range][name]['displayHours'])
+                        conn.execute(db_insert_sun)
+                    else:
+                        # General Insert, for friday and special days
+                        db_insert = operating_hours.insert().values(food_outlet_id=food_outlet_id,
+                                                                    day=day,
+                                                                    is_closed=uvic_hours_dict[day][name]['isClosed'],
+                                                                    display_hours=uvic_hours_dict[day][name]['displayHours'])
+                        conn.execute(db_insert)
         conn.commit()
 
     result = engine.connect().execute(operating_hours.select())
@@ -219,6 +332,8 @@ def db_uts():
     result = engine.connect().execute(time_slots.select())
     row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
     return row_dict
+
+
 
 # Displays FoodOutlets Currently saved in DB
 @db_blueprint.route('/db/food_outlets')

@@ -22,7 +22,6 @@ def mystic_cove_menu_dict(url, location):
 
     return menu_items
 
-
 def mystic_cove_menu_response(url, location):
     try:
         menu_items = mystic_cove_menu_dict(url, location)
@@ -30,7 +29,6 @@ def mystic_cove_menu_response(url, location):
     except:
         return jsonify({"error": "Failed to retrieve menu"}), 500
     
-
 def others_menus(url):
     #get webpage and check its 200 ok
     r = requests.get(url)
@@ -41,7 +39,6 @@ def others_menus(url):
     soup = BeautifulSoup(r.content, 'html.parser')
     menu_items = parse_list(soup)
     return jsonify(menu_items)
-
 
 @menu_blueprint.route('/menu')
 def menu_home():
