@@ -51,11 +51,9 @@ def normalize_name(name):
     # Remove extra whitespace
     name = ' '.join(name.split())
     
-    # Specific case handling (optional)
+    # Specific case handling
     if "bibliocafe" in name:
         return "bibliocafe"
-    if "fresco taco ban" in name:
-        return "fresco"
     
     return name
 
