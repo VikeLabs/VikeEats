@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import "./minimized-cards.css";
 import { useCategory } from "./category-state";
 import { stores } from "./minimized-cards-data";
@@ -15,12 +15,13 @@ import { markerData } from "./marker-data";
  * - Filters cards based on selected categories
  * - Enables smooth map navigation when cards are clicked
  * - Provides a one-time zoom-in effect on the first card click
+ * - Resets zoom behavior after double-clicking to zoom out
  * - Maintains a consistent zoomed-in view for subsequent card selections
  * 
  * Interaction Behavior:
  * 1. First card click: Zooms in significantly to the selected location
  * 2. Subsequent card clicks: Centers the map on the selected location
- * 3. Preserves original map interactions (e.g., double-click to zoom out)
+ * 3. Double-click to zoom out resets the zoom state
  * 
  * @component
  * @returns {JSX.Element} Rendered minimized food outlet cards
@@ -40,6 +41,24 @@ const MinimizedCards = () => {
     : cards.filter((card) =>
         card.categories.some((cat) => selectedCategories.includes(cat))
       );
+
+  useEffect(() => {
+    const map = getMapInstance();
+    if (!map) return;
+
+    // Detect double-click to reset zoom state
+    const handleDoubleClick = () => {
+      hasZoomedRef.current = false;
+      initialZoomRef.current = null;
+    };
+
+    map.getViewport().addEventListener('dblclick', handleDoubleClick);
+
+    // Cleanup
+    return () => {
+      map.getViewport().removeEventListener('dblclick', handleDoubleClick);
+    };
+  }, []);
 
   /**
    * Handles card click event to update map view
