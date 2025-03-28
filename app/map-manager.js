@@ -3,7 +3,6 @@ import TileLayer from "ol/layer/Tile";
 import OSM from "ol/source/OSM";
 import { fromLonLat } from "ol/proj";
 import { defaults as defaultInteractions } from 'ol/interaction';
-import DoubleClickZoom from 'ol/interaction/DoubleClickZoom';
 import { UVIC_COORDINATES, MAP_ZOOM_LEVEL } from './config';
 
 // Globals
