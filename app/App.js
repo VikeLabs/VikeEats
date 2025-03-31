@@ -6,6 +6,8 @@ import FilterButtons from "./first-level-filter";
 import MapLayer from "./map";
 import MarkerLayer from "./marker";
 import UserLocationMarker from "./UserLocationMarker";
+import MaximizedCards from "./maximized-cards";
+import CardsContainer from "./cards-manager";
 
 /**
  * The main application component.
@@ -69,7 +71,7 @@ const App = () => {
       <UserLocationMarker />
       <FilterButtons />
       <NavBar />
-      <MinimizedCards />
+      <CardsContainer />
     </div>
   );
 };
