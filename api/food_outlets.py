@@ -19,6 +19,7 @@ import json
 from .datetimeencoder import DateTimeEncoder
 import calendar
 import logging
+from collections import OrderedDict
 
 
 food_outlets_blueprint = Blueprint('food_outlets', __name__)
@@ -54,6 +55,38 @@ def get_food_outlets():
     except Exception as e:
         logging.error(f"Error in get_food_outlets: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+@food_outlets_blueprint.route('/food_outlets_with_buildings')
+def add_names_of_food_outlets():
+    response = get_food_outlets()
+    json_dict = response.get_json()
+
+    # Define mapping of food outlets to buildings
+    building_mapping = {
+        "The Cove": "Cove",
+        "Mystic Market": "Farquhar Auditorium",
+        "Mac's": "MacLaurin",
+        "Bibliocafe": "McPherson Library",
+        "Arts Place": "Fine Art's Building",
+        "Nibbles & Bytes": "Engineering Lab Wing",
+        "Sci Cafe": "Bob Wright Center"
+    }
+
+    for day, outlets in json_dict.items():
+        current_building = None  # Keep track of the most recent building found
+
+        for outlet_name in outlets.keys():  # Iterate in insertion order
+            if outlet_name in building_mapping:
+                current_building = building_mapping[outlet_name]  # Update building name
+
+            if current_building:
+                outlets[outlet_name] = {"Building": current_building, **outlets[outlet_name]}
+
+    return json_dict
+
+
+
 
 
 
