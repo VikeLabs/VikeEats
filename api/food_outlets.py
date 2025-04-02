@@ -64,7 +64,7 @@ def add_names_of_food_outlets():
     response = get_food_outlets()
     json_dict = response.get_json()
 
-    # Define mapping of food outlets to buildings
+    # Define mapping of food outlets to the building names
     building_mapping = {
         "The Cove": "Cove",
         "Mystic Market": "Farquhar Auditorium",
