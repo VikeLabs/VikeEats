@@ -5,55 +5,13 @@ from bs4 import BeautifulSoup
 # Create a blueprint for menus
 menu_blueprint = Blueprint('menu', __name__)
 
-@menu_blueprint.route('/menu')
-def menu_home():
-    # return url_for('menu.cove_menu'), url_for('menu.mystic_menu')
-    return "Welcome to the menu page <br>" + "<br>Cove Menu: " + url_for('menu.cove_menu') + "<br>Mystic Menu: " + url_for('menu.mystic_menu')
 
-@menu_blueprint.route('/menu/cove/greens')
-def greens_menu():
-    return cove_menu('tabs-greens')
-    
-@menu_blueprint.route('/menu/cove/deli')
-def deli_menu():
-    return cove_menu('tabs-deli')
-
-@menu_blueprint.route('/menu/cove/shawarma')
-def shawarma_menu():
-    return cove_menu('tabs-shawarma')
-
-@menu_blueprint.route('/menu/cove/asian-fusion')
-def asian_fusion_menu():
-    return cove_menu('tabs-asian-fusion')
-
-@menu_blueprint.route('/menu/cove/pizza')
-def pizza_menu():
-    return cove_menu('tabs-pizza')
-
-@menu_blueprint.route('/menu/cove/grill')
-def grill_menu():
-    return cove_menu('tabs-grill')
-
-@menu_blueprint.route('/menu/cove/entre')
-def entre_menu():
-    return cove_menu('tabs-entre')
-
-@menu_blueprint.route('/menu/cove/bread')
-def bread_menu():
-    return cove_menu('tabs-bread')
-
-@menu_blueprint.route('/menu/cove/halal')
-def halal_menu():
-    return cove_menu('tabs-halal')
-
-
-def cove_menu(location):
-    #TODO: Implement this function
-
+#UPDATED FUNCTIONS
+def mystic_cove_menu_dict(url, location):
     #get webpage and check its 200 ok
-    r = requests.get("https://www.uvic.ca/services/food/where/thecove/index.php")
+    r = requests.get(url)
     if r.status_code != 200:
-        return jsonify({"error": "Failed to retrieve page"}), 500
+        raise Exception("Failed to retrieve page")
     
     #extract the menu items from the webpage
     soup = BeautifulSoup(r.content, 'html.parser')
@@ -62,95 +20,110 @@ def cove_menu(location):
     else:
         menu_items = parse(soup, location)
 
-    #return the menu items as json
+    return menu_items
+
+def mystic_cove_menu_response(url, location):
+    try:
+        menu_items = mystic_cove_menu_dict(url, location)
+        return jsonify(menu_items)
+    except:
+        return jsonify({"error": "Failed to retrieve menu"}), 500
+    
+def others_menus(url):
+    #get webpage and check its 200 ok
+    r = requests.get(url)
+    if r.status_code != 200:
+        return jsonify({"error": "Failed to retrieve page"}), 500
+    
+    #extract the menu items from the webpage
+    soup = BeautifulSoup(r.content, 'html.parser')
+    menu_items = parse_list(soup)
     return jsonify(menu_items)
+
+@menu_blueprint.route('/menu')
+def menu_home():
+    # return url_for('menu.cove_menu'), url_for('menu.mystic_menu')
+    return "Welcome to the menu page <br>" + "<br>Cove Menu: " + url_for('menu.cove_menu') + "<br>Mystic Menu: " + url_for('menu.mystic_menu')
+
+@menu_blueprint.route('/menu/cove/greens')
+def greens_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-greens')
+    
+@menu_blueprint.route('/menu/cove/deli')
+def deli_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-deli')
+
+@menu_blueprint.route('/menu/cove/shawarma')
+def shawarma_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-shawarma')  
+
+@menu_blueprint.route('/menu/cove/asian-fusion')
+def asian_fusion_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-asian-fusion')
+
+@menu_blueprint.route('/menu/cove/pizza')
+def pizza_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-pizza')
+
+@menu_blueprint.route('/menu/cove/grill')
+def grill_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-grill')
+
+@menu_blueprint.route('/menu/cove/entre')
+def entre_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-entre')
+
+@menu_blueprint.route('/menu/cove/bread')
+def bread_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-bread')
+
+@menu_blueprint.route('/menu/cove/halal')
+def halal_menu():
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/thecove/index.php", 'tabs-halal')
+
+
 
 #return json for different mystic locations
 
 @menu_blueprint.route('/menu/mystic/chopbox')
 def chopbox_menu():
-    return mystic_menu('tabs-chopbox')
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/mysticmarket/index.php", 'tabs-chopbox')
 
 @menu_blueprint.route('/menu/mystic/fresco-taco')
 def fresco_taco_menu():
-    return mystic_menu('tabs-fresco-taco')
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/mysticmarket/index.php", 'tabs-fresco-taco')
 
 @menu_blueprint.route('/menu/mystic/flamin-good-chicken')
 def flamin_good_chicken_menu():
-    return mystic_menu('tabs-flamin-good-chicken')
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/mysticmarket/index.php", 'tabs-flamin-good-chicken')
 
 @menu_blueprint.route('/menu/mystic/pickle-and-spice')
 def pickle_and_spice_menu():
-    return mystic_menu('tabs-pickle-and-spice')
+    return mystic_cove_menu_response("https://www.uvic.ca/services/food/where/mysticmarket/index.php", 'tabs-pickle-and-spice')
 
 #no menu for tofinos
-
-def mystic_menu(location):
-    #TODO: Implement this function
-
-    #get webpage and check its 200 ok
-    r = requests.get("https://www.uvic.ca/services/food/where/mysticmarket/index.php")
-    if r.status_code != 200:
-        return jsonify({"error": "Failed to retrieve page"}), 500
-    
-    #extract the menu items from the webpage
-    soup = BeautifulSoup(r.content, 'html.parser')
-    menu_items = parse(soup, location)
-
-    #return the menu items as json
-    return jsonify(menu_items)
 
 
 @menu_blueprint.route('/menu/bibliocafe')
 def biblio_menu():
-    #get webpage and check its 200 ok
-    r = requests.get("https://www.uvic.ca/services/food/where/bibliocafe/index.php")
-    if r.status_code != 200:
-        return jsonify({"error": "Failed to retrieve page"}), 500
-    
-    #extract the menu items from the webpage
-    soup = BeautifulSoup(r.content, 'html.parser')
-    menu_items = parse_list(soup)
-    return jsonify(menu_items)
+    return others_menus('https://www.uvic.ca/services/food/where/bibliocafe/index.php')
 
 
 @menu_blueprint.route('/menu/arts-place')
 def arts_place_menu():
-    #get webpage and check its 200 ok
-    r = requests.get("https://www.uvic.ca/services/food/where/artsplace/index.php")
-    if r.status_code != 200:
-        return jsonify({"error": "Failed to retrieve page"}), 500
-    
-    #extract the menu items from the webpage
-    soup = BeautifulSoup(r.content, 'html.parser')
-    menu_items = parse_list(soup)
-    return jsonify(menu_items)
+    return others_menus('https://www.uvic.ca/services/food/where/artsplace/index.php')
     
 
 @menu_blueprint.route('/menu/nibbles-and-bytes')
 def nibbles_and_bytes_menu():
-    #get webpage and check its 200 ok
-    r = requests.get("https://www.uvic.ca/services/food/where/nibblesbytes/index.php")
-    if r.status_code != 200:
-        return jsonify({"error": "Failed to retrieve page"}), 500
-    
-    #extract the menu items from the webpage
-    soup = BeautifulSoup(r.content, 'html.parser')
-    menu_items = parse_list(soup)
-    return jsonify(menu_items)
+    return others_menus('https://www.uvic.ca/services/food/where/nibblesbytes/index.php')
 
 
 @menu_blueprint.route('/menu/sci-cafe')
 def sci_cafe_menu():
-    #get webpage and check its 200 ok
-    r = requests.get("https://www.uvic.ca/services/food/where/scicafe/index.php")
-    if r.status_code != 200:
-        return jsonify({"error": "Failed to retrieve page"}), 500
-    
-    #extract the menu items from the webpage
-    soup = BeautifulSoup(r.content, 'html.parser')
-    menu_items = parse_list(soup)
-    return jsonify(menu_items)
+    return others_menus('https://www.uvic.ca/services/food/where/scicafe/index.php')
+
+
 
 def parse(soup, location):
     dict = {}
@@ -169,7 +142,6 @@ def parse(soup, location):
             #get dietary restriction information
             item_div = item.find_next_sibling('div')
             dietary_icons = item_div.find_all('img')
-            print(len(dietary_icons))
             dietary_restrictions = []
             #find which icons apply
             for icon in dietary_icons:
@@ -181,7 +153,6 @@ def parse(soup, location):
                     dietary_restrictions.append('gluten free')
                 elif 'dairy-free' in icon['src']:
                     dietary_restrictions.append('dairy free')
-            print(dietary_restrictions)
 
             #get ingredients and allergens
             p_tags = item_div.find_all('p')
@@ -250,7 +221,6 @@ def parse_cove_alt(soup, location):
         #get dietary restriction information
         
         dietary_icons = item_div.find_all('img')
-        print(len(dietary_icons))
         dietary_restrictions = []
         #find which icons apply
         for icon in dietary_icons:
@@ -264,7 +234,6 @@ def parse_cove_alt(soup, location):
                 dietary_restrictions.append('dairy free')
             elif 'halal' in icon['src']:
                 dietary_restrictions.append('halal')
-        print(dietary_restrictions)
 
         #get ingredients and allergens
         p_tags = item_div.find_all('p')

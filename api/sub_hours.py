@@ -14,12 +14,19 @@ app = Flask(__name__)
 
 @sub_hours_blueprint.route('/sub_hours')
 def get_sub_menu():
+    sub_hours = get_sub_hours()
+
+    # manually convert sub_hours to json, as jsonify hates special characters
+    json_output = json.dumps(sub_hours, ensure_ascii=False, indent=4)
+    return Response(json_output, mimetype='application/json')
+
+def get_sub_hours():
     r = requests.get("https://uvss.ca/thesub/")
     if r.status_code != 200:
         return jsonify({"error": "Failed to retrieve page"}), 500
 
     soup = BeautifulSoup(r.content, 'html.parser')
-    # intialize sub_hours dict
+    
     sub_hours = {
     'Monday': {},
     'Tuesday': {},
@@ -30,24 +37,24 @@ def get_sub_menu():
     'Sunday': {}
     }
 
-    # store scraped hours into dicts
     bean_there_info = bean_there(soup)
     fels_info = fels(soup)
     the_grill_info = the_grill(soup)
     munchie_bar_info = munchie_bar(soup)
     health_food_bar_info = health_food_bar(soup)
 
-    # a function to quickly update sub_hours dict
     def update_sub_hours(days, name, hours):
         for day in days:
             start_time,end_time = hours_to_datetime(hours)
             if start_time == None:
-                sub_hours[day][name] = {"isClosed":True,
+                sub_hours[day][name] = {"Building":"The Sub",
+                                        "isClosed":True,
                                         "rawHours":[{"start":None,
                                                     "end":None}],
                                         "displayHours":"Closed :)"}
             else:
-                sub_hours[day][name] = {"isClosed":False,
+                sub_hours[day][name] = {"Building":"The Sub",
+                                        "isClosed":False,
                                         "rawHours":[{"start":f"{start_time.strftime('%I:%M %p')}",
                                                     "end":f"{end_time.strftime('%I:%M %p')}"}],
                                         "displayHours":f"{start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}"}
@@ -72,9 +79,6 @@ def get_sub_menu():
         
         return start, end
 
-
-    # go through all of the individual dicts, and combine them into one, where the key is the
-    # day of the week, and the value is the name and hours
     for d in [bean_there_info, fels_info, the_grill_info, munchie_bar_info, health_food_bar_info]:
         for key, value in d.items():
             name = list(value.keys())[0]
@@ -89,11 +93,8 @@ def get_sub_menu():
                 update_sub_hours(['Saturday', 'Sunday'], name, hours)
             elif 'Monday – Friday' in key:
                 update_sub_hours(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], name, hours)
-    
-    # manually convert sub_hours to json, as jsonify hates special characters
-    json_output = json.dumps(sub_hours, ensure_ascii=False, indent=4)
-    return Response(json_output, mimetype='application/json')
 
+    return sub_hours
 
 def bean_there(soup):
     """Parse the REGULAR HOURS for Bean There from the UVSS page."""
