@@ -27,7 +27,7 @@ app = Flask(__name__)
 
 
 
-@food_outlets_blueprint.route('/food_outlets')
+@food_outlets_blueprint.route('/food_outlets', methods=['GET'])
 def get_food_outlets():
     try:
         r = requests.get("https://www.uvic.ca/services/food/where/index.php")

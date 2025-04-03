@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 # Create a blueprint for menus
 menu_blueprint = Blueprint('menu', __name__)
 
-@menu_blueprint.route('/menu')
+@menu_blueprint.route('/menu', methods=['GET'])
 def menu_home():
     # return url_for('menu.cove_menu'), url_for('menu.mystic_menu')
     return "Welcome to the menu page <br>" + "<br>Cove Menu: " + url_for('menu.cove_menu') + "<br>Mystic Menu: " + url_for('menu.mystic_menu')
@@ -46,7 +46,7 @@ def bread_menu():
 def halal_menu():
     return cove_menu('tabs-halal')
 
-
+@menu_blueprint.route('/menu/cove', methods=['GET'])
 def cove_menu(location):
     #TODO: Implement this function
 
@@ -84,7 +84,7 @@ def pickle_and_spice_menu():
     return mystic_menu('tabs-pickle-and-spice')
 
 #no menu for tofinos
-
+@menu_blueprint.route('/menu/mystic', methods=['GET'])
 def mystic_menu(location):
     #TODO: Implement this function
 
