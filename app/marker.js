@@ -1,16 +1,3 @@
-/**
- * marker.js
- * 
- * This module defines a MarkerLayer component that dynamically adds markers to the OpenLayers map.
- * It subscribes to category selection state and updates marker styles based on selected categories.
- *
- * Features:
- * - Uses shared map instance from `map-manager.js`.
- * - Fetches marker data from `marker-data.js`.
- * - Updates marker visibility and style dynamically based on selected categories.
- * - Cleans up by removing the marker layer when unmounted.
- */
-
 import { useEffect } from "react";
 import { Feature } from "ol";
 import { Point } from "ol/geom";
@@ -22,7 +9,7 @@ import { markerData } from "./marker-data";
 import { useCategory } from "./category-state";
 import { getMapInstance } from "./map-manager";
 
-//Globals
+// Globals
 let blue = "#2f76ff";
 
 /**
@@ -41,16 +28,15 @@ const MarkerLayer = () => {
   const [selectedCategories] = useCategory();
 
   useEffect(() => {
-    // Wait for the map to be ready
     if (!map) return;
 
     // Convert marker data to features and apply styles
     const features = markerData.map((marker) => {
       const feature = new Feature({
-        geometry: new Point(fromLonLat(marker.coords)),
+        geometry: new Point(fromLonLat(marker.coords)), // Convert coords once here
+        markerData: marker, // Store marker data for reference
       });
 
-      // Determine if the marker should be active (blue) or inactive (grey)
       const isActive =
         selectedCategories.includes("all") ||
         (marker.categories &&
@@ -68,18 +54,73 @@ const MarkerLayer = () => {
       return feature;
     });
 
-    // Create a vector source and layer for markers
+    // Create vector source and layer
     const vectorSource = new VectorSource({ features });
-    const vectorLayer = new VectorLayer({ source: vectorSource });
+    const vectorLayer = new VectorLayer({ 
+      source: vectorSource,
+      zIndex: 10 // Ensure markers are on top
+    });
 
     // Add the layer to the map
     map.addLayer(vectorLayer);
 
-    // Cleanup: Remove the marker layer when component unmounts
-    return () => map.removeLayer(vectorLayer);
+    // Define click handler function that will prevent default behavior
+    const handleMarkerClick = (event) => {
+      let markerClicked = false;
+      
+      map.forEachFeatureAtPixel(event.pixel, (feature) => {
+        const marker = feature.get("markerData");
+        if (marker) {
+          // Prevent the event from propagating to the map
+          event.preventDefault();
+          event.stopPropagation();
+          markerClicked = true;
+          
+          // Get current zoom level
+          const currentZoom = map.getView().getZoom();
+          
+          // Calculate target zoom level - ensure it's higher than current zoom
+          // Target zoom 16 for a good detail level, or current zoom + 2 if already zoomed in
+          const targetZoom = Math.max(16, currentZoom + 2);
+          
+          // First center on the marker without changing zoom
+          map.getView().animate({
+            center: fromLonLat(marker.coords),
+            duration: 600, // Smooth centering
+          });
+          
+          // Then zoom in after a short delay to ensure smooth transition
+          setTimeout(() => {
+            map.getView().animate({
+              zoom: targetZoom,
+              duration: 1000, // Longer duration for smoother zoom
+            });
+          }, 100);
+          
+          return true; // Stop iterating through features
+        }
+        return false;
+      });
+      
+      if (markerClicked) {
+        // Return false to prevent default map click behavior
+        return false;
+      }
+    };
+
+    // Add click event listener for markers 
+    // Use the 'singleclick' event to better differentiate from double-clicks
+    map.on("singleclick", handleMarkerClick);
+
+    // Cleanup: Remove layer and event listener on unmount
+    return () => {
+      map.removeLayer(vectorLayer);
+      map.un("singleclick", handleMarkerClick); // Remove specific listener
+    };
   }, [map, selectedCategories]);
 
   return null;
 };
 
+// Make sure to export as DEFAULT
 export default MarkerLayer;

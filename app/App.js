@@ -74,6 +74,6 @@ const App = () => {
       <CardsContainer />
     </div>
   );
-};
+}
 
 export default App;
