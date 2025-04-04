@@ -1,5 +1,5 @@
 .navbar {
-    @apply flex justify-between items-center bg-white text-primary-dark fixed top-0 left-0 w-full max-w-full z-10 shadow-lg font-header-regular text-base
+    @apply flex justify-between items-center bg-white text-primary-dark fixed top-0 left-0 w-full max-w-full z-10 shadow-lg font-header-regular text-base 
 }
 
 .logo {

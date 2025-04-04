@@ -12,6 +12,7 @@
 
 import React from 'react';
 import './Navbar.css';
+import Link from 'next/link'
 
 /**
  * Navbar Component
@@ -32,7 +33,7 @@ function Navbar() {
                 <ul>
                     <li><a href="#">Food Establishments</a></li>
                     <li><a href="#">Amenities</a></li>
-                    <li><a href="#">Contact Us</a></li>
+                    <li><Link href="/contact" legacyBehavior><a>Contact Us</a></Link></li>
                 </ul>
             </div>
         </nav>
