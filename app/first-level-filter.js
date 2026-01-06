@@ -1,18 +1,33 @@
-import React, { useState } from "react";
+/**
+ * first-level-filter.js
+ * 
+ * This component provides a set of filter buttons to allow users to toggle category selections.
+ * It utilizes the `useCategory` hook to manage selected categories across multiple components.
+ *
+ * Features:
+ * - Displays a list of predefined category buttons.
+ * - Allows toggling of category selection.
+ * - Provides a "clear" button to reset selections.
+ * - Updates UI based on selected categories.
+ */
+
+import React from "react";
 import "./first-level-filter.css";
 import { useCategory } from "./category-state";
 
-//temporary filter buttons for markers
-//sets the selected category into activeMarker state for MarkerLayer to display
+/**
+ * FilterButtons Component
+ * 
+ * Renders a set of filter buttons that allow users to select and toggle categories.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered filter button UI.
+ */
 const FilterButtons = () => {
-  //stores id of the selected filter button
-  //used for styling of the buttons
-  const [idSelected, setIdSelected] = useState(null);
+  // Retrieve selected categories and function to toggle them
+  const [selectedCategories, toggleCategory] = useCategory();
 
-  //stores category selected
-  const [selectedCategory, setSelectedCategory] = useCategory();
-
-  //filter buttons
+  // List of available category filters
   const categories = [
     "all",
     "filter1",
@@ -22,40 +37,46 @@ const FilterButtons = () => {
     "filter5",
   ];
 
-  //set selected id and category to its respective states
-  const handleButtonClick = (id, category) => {
-    setIdSelected(id);
-    setSelectedCategory(category);
-    console.log({ category });
-    console.log({ selectedCategory });
+  /**
+   * Handles button clicks to toggle category selection.
+   * 
+   * @param {string|null} category - The category to toggle, or null to clear all selections.
+   */
+  const handleButtonClick = (category) => {
+    toggleCategory(category);
+    console.log("Toggled category:", category);
+    console.log("Now selected:", selectedCategories);
   };
 
   return (
     <div>
       <div className="filter-buttons">
-        {/* map out filter buttons from categories array from above */}
-        {categories.map((category, index) => (
+        {/* Render category buttons dynamically */}
+        {categories.map((category) => (
           <button
-            className={`filter-button ${
-              idSelected === index ? "active" : "inactive"
-            }`}
             key={category}
-            id={index}
-            onClick={() => handleButtonClick(index, category)}
+            className={`filter-button ${
+              selectedCategories.includes(category) ? "active" : "inactive"
+            }`}
+            onClick={() => handleButtonClick(category)}
           >
             {category}
           </button>
         ))}
-
-        {/* greys all markers and hides all cards */}
+        
+        {/* Clear selection button */}
         <button
-          key={"clear"}
-          id={-1}
-          onClick={() => handleButtonClick(-1, null)}
-          className={"filter-button inactive"}
+          key="clear"
+          className="filter-button inactive"
+          onClick={() => handleButtonClick(null)}
         >
           clear
         </button>
+      </div>
+      
+      {/* Display selected categories */}
+      <div>
+        <p>Selected Categories: {selectedCategories.join(", ")}</p>
       </div>
     </div>
   );
