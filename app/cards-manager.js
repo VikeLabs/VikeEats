@@ -14,9 +14,8 @@
 import React, { useState } from 'react';
 import MinimizedCards from './minimized-cards';
 import MaximizedCards from './maximized-cards';
-import { stores } from './cards-data';
 
-const CardsContainer = () => {
+const CardsContainer = ({ stores }) => {
   const [selectedStore, setSelectedStore] = useState(null);
 
   // displays minimized card as maximized card

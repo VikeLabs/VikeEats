@@ -104,6 +104,11 @@ def parse(soup):
                         # print(f"food_outlets: {food_outlets}")
 
     #process hours into date time objects
+<<<<<<< Updated upstream
+=======
+    time_ranges = copy.deepcopy(food_outlets)
+    # print(f"Scraped food outlets: {json.dumps(food_outlets, indent=2)}")
+>>>>>>> Stashed changes
     for day_range in food_outlets:
         for outlet, time_range in food_outlets[day_range].items():
             # food_outlets[day_range][outlet] = turn_to_datetime(time_range)
@@ -155,9 +160,25 @@ def turn_to_datetime(time_range):
             except ValueError:
                 raise ValueError(f"Invalid time format: {time}")
 
+<<<<<<< Updated upstream
         all_ranges.append(tuple(processed_range))
 
     return all_ranges  # Returns a list of time tuples
+=======
+    for key in food_outlets:
+        if key == day_of_week:
+            return {key: food_outlets[key]}
+        else:
+            try:
+                key_list = key.split(" - ")
+                lower_index = days.index(key_list[0])
+                higher_index = days.index(key_list[1])
+                today_index = days.index(day_of_week)
+                if today_index >= lower_index and today_index <= higher_index:
+                    return {key: food_outlets[key]}
+            except:
+                pass
+>>>>>>> Stashed changes
 
 
 def is_within_date_range(current_date, food_outlets):

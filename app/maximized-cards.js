@@ -35,7 +35,7 @@ const MaximizedCards = ({ store, onClose }) => {
               store.menu.map((item, index) => (
                 <div key={index} className="menu-item">
                   <p className="item-name">{item.name}</p>
-                  <p className="item-price">{item.price}</p>
+                  {item.price && <p className="item-price">{item.price}</p>}
                   <p className="item-description">{item.description}</p>
                 </div>
               ))}

@@ -18,7 +18,6 @@ import { fromLonLat } from "ol/proj";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import { Style, Circle, Fill } from "ol/style";
-import { markerData } from "./marker-data";
 import { useCategory } from "./category-state";
 import { getMapInstance } from "./map-manager";
 
@@ -34,18 +33,22 @@ let blue = "#2f76ff";
  * @component
  * @returns {null} Does not return JSX since it only interacts with OpenLayers.
  */
-const MarkerLayer = () => {
+const MarkerLayer = ({ stores }) => {
   // Get the shared map instance
   const map = getMapInstance();
   // Get the selected categories from state
   const [selectedCategories] = useCategory();
 
   useEffect(() => {
+<<<<<<< Updated upstream
     // Wait for the map to be ready
     if (!map) return;
+=======
+    if (!map || !stores || stores.length === 0) return;
+>>>>>>> Stashed changes
 
     // Convert marker data to features and apply styles
-    const features = markerData.map((marker) => {
+    const features = stores.map((marker) => {
       const feature = new Feature({
         geometry: new Point(fromLonLat(marker.coords)),
       });
