@@ -10,14 +10,11 @@
  * - Automatically updates when category selections change.
  */
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import "./minimized-cards.css";
 import { useCategory } from "./category-state";
-<<<<<<< Updated upstream
-=======
 import { getMapInstance } from "./map-manager";
 import { fromLonLat } from "ol/proj";
->>>>>>> Stashed changes
 
 /**
  * MinimizedCards Component
@@ -27,26 +24,11 @@ import { fromLonLat } from "ol/proj";
  * @component
  * @returns {JSX.Element} The rendered minimized food place cards.
  */
-<<<<<<< Updated upstream
-const MinimizedCards = ({ stores, onCardClick }) => {
-=======
 const MinimizedCards = ({ stores = [], onCardClick }) => {
->>>>>>> Stashed changes
   const [selectedCategories] = useCategory();
+  const hasZoomedRef = useRef(false);
+  const initialZoomRef = useRef(null);
 
-  /**
-   * Filters cards based on selected categories.
-   * If "all" is selected, all cards are displayed.
-   * Otherwise, only cards matching selected categories are shown.
-   */
-  const filteredCards = selectedCategories.includes("all")
-    ? stores
-    : stores.filter((card) =>
-        card.categories && card.categories.some((cat) => selectedCategories.includes(cat))
-      );
-
-<<<<<<< Updated upstream
-=======
   useEffect(() => {
     const map = getMapInstance();
     if (!map) return;
@@ -66,51 +48,64 @@ const MinimizedCards = ({ stores = [], onCardClick }) => {
   }, []);
 
   /**
-   * Handles card click event to update map view
+   * Handles card click event to update map view and set the selected store.
    * 
    * @param {Object} store - The selected store/card data
    */
-  const handleCardClick = (store) => {
+  const handleInternalCardClick = (store) => {
     const map = getMapInstance();
-    if (!map || !store.coords) return;
+    if (map && store.coords) {
+      const currentZoom = map.getView().getZoom();
+      
+      // First-time zoom behavior
+      if (!hasZoomedRef.current) {
+        // Store the initial zoom level
+        initialZoomRef.current = currentZoom;
+        
+        // Calculate target zoom: 3 levels closer, max 18
+        const targetZoom = Math.min(initialZoomRef.current + 3, 18);
+        
+        // Animate center and zoom in one smooth motion
+        map.getView().animate({
+          center: fromLonLat(store.coords),
+          zoom: targetZoom,
+          duration: 1000
+        });
 
-    const currentZoom = map.getView().getZoom();
+        hasZoomedRef.current = true;
+      } else {
+        // Subsequent clicks: just center the map
+        map.getView().animate({
+          center: fromLonLat(store.coords),
+          duration: 600
+        });
+      }
+    }
     
-    // First-time zoom behavior
-    if (!hasZoomedRef.current) {
-      // Store the initial zoom level
-      initialZoomRef.current = currentZoom;
-      
-      // Calculate target zoom: 3 levels closer, max 18
-      const targetZoom = Math.min(initialZoomRef.current + 3, 18);
-      
-      // Animate center and zoom in one smooth motion
-      map.getView().animate({
-        center: fromLonLat(store.coords),
-        zoom: targetZoom,
-        duration: 1000
-      });
-
-      hasZoomedRef.current = true;
-    } else {
-      // Subsequent clicks: just center the map
-      map.getView().animate({
-        center: fromLonLat(store.coords),
-        duration: 600
-      });
+    // Call the external onCardClick
+    if (onCardClick) {
+      onCardClick(store);
     }
   };
 
->>>>>>> Stashed changes
+  /**
+   * Filters cards based on selected categories.
+   * If "all" is selected, all cards are displayed.
+   * Otherwise, only cards matching selected categories are shown.
+   */
+  const filteredCards = selectedCategories.includes("all")
+    ? stores
+    : stores.filter((card) =>
+        card.categories && card.categories.some((cat) => selectedCategories.includes(cat))
+      );
+
   return (
     <div className="MinimizedCards">
       {filteredCards.map((store, index) => (
         <div
           key={index}
           className="store_card"
-          onClick={() => {
-            onCardClick(store);
-          }}
+          onClick={() => handleInternalCardClick(store)}
         >
           <div className="store_info">
             <h2 className="store_title">{store.name}</h2>

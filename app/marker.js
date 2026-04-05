@@ -40,12 +40,8 @@ const MarkerLayer = ({ stores }) => {
   const [selectedCategories] = useCategory();
 
   useEffect(() => {
-<<<<<<< Updated upstream
-    // Wait for the map to be ready
-    if (!map) return;
-=======
+    // Wait for the map and stores to be ready
     if (!map || !stores || stores.length === 0) return;
->>>>>>> Stashed changes
 
     // Convert marker data to features and apply styles
     const features = stores.map((marker) => {
@@ -80,7 +76,7 @@ const MarkerLayer = ({ stores }) => {
 
     // Cleanup: Remove the marker layer when component unmounts
     return () => map.removeLayer(vectorLayer);
-  }, [map, selectedCategories]);
+  }, [map, selectedCategories, stores]);
 
   return null;
 };

@@ -5,9 +5,6 @@ from bs4 import BeautifulSoup
 # Create a blueprint for menus
 menu_blueprint = Blueprint('menu', __name__)
 
-<<<<<<< Updated upstream
-@menu_blueprint.route('/menu', methods=['GET'])
-=======
 
 #UPDATED FUNCTIONS
 def mystic_cove_menu_dict(url, location):
@@ -59,7 +56,6 @@ def others_menus(url):
         return jsonify({"error": "Failed to retrieve menu"}), 500
 
 @menu_blueprint.route('/menu')
->>>>>>> Stashed changes
 def menu_home():
     # return url_for('menu.cove_menu'), url_for('menu.mystic_menu')
     return "Welcome to the menu page <br>" + "<br>Cove Menu: " + url_for('menu.cove_menu') + "<br>Mystic Menu: " + url_for('menu.mystic_menu')
@@ -95,16 +91,8 @@ def mystic_menu():
 
     #sample menu items feel free to delete
 
-<<<<<<< Updated upstream
-    menu_items = [
-        {"name": "Mystic Burger", "price": 9.99, "category": "Main Course"},
-        {"name": "Mystic Fries", "price": 3.99, "category": "Sides"},
-        {"name": "Mystic Coke", "price": 1.99, "category": "Drinks"},
-        {"name": "Mystic Salad", "price": 4.99, "category": "Appetizers"},
-    ]
-    return jsonify(menu_items)
-=======
 #return json for different mystic locations
+    return False
 
 @menu_blueprint.route('/menu/mystic/chopbox')
 def chopbox_menu():
@@ -298,4 +286,3 @@ def parse_list(soup):
         menu_items.append(item_str)
 
     return menu_items
->>>>>>> Stashed changes
