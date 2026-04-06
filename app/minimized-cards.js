@@ -111,7 +111,7 @@ const MinimizedCards = ({ stores = [], onCardClick }) => {
             <h2 className="store_title">{store.name}</h2>
             <p className="store_time">{store.time}</p>
           </div>
-          <img src={store.image} alt={store.name} className="store_image" />
+          <img src={store.image} alt={store.name} className={store.location === "The Sub" ? "store_image store_image_logo" : "store_image"} />
         </div>
       ))}
     </div>

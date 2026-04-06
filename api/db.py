@@ -196,7 +196,7 @@ def db_ufo():
     # Mapping for UVic food outlets to buildings
     building_mapping = {
         "the cove": "Cove",
-        "mystic market": "Farquhar Auditorium",
+        "mystic market": "Jamie Cassels Centre",
         "mac's": "MacLaurin",
         "mac's bistro": "MacLaurin",
         "bibliocafe": "McPherson Library",
@@ -219,16 +219,16 @@ def db_ufo():
         "breakfast parfait bar": "Cove",
         "feast brunch": "Cove",
         # Mystic kiosks
-        "chop box": "Farquhar Auditorium",
-        "flamin' chicken": "Farquhar Auditorium",
-        "fresco": "Farquhar Auditorium",
-        "pickle & spice": "Farquhar Auditorium",
-        "shoyu": "Farquhar Auditorium",
-        "tofino's": "Farquhar Auditorium",
-        "yolk'd": "Farquhar Auditorium",
-        "general store": "Farquhar Auditorium",
-        "boardwalk": "Farquhar Auditorium",
-        "booster juice": "Farquhar Auditorium"
+        "chop box": "Jamie Cassels Centre",
+        "flamin' chicken": "Jamie Cassels Centre",
+        "fresco": "Jamie Cassels Centre",
+        "pickle & spice": "Jamie Cassels Centre",
+        "shoyu": "Jamie Cassels Centre",
+        "tofino's": "Jamie Cassels Centre",
+        "yolk'd": "Jamie Cassels Centre",
+        "general store": "Jamie Cassels Centre",
+        "boardwalk": "Jamie Cassels Centre",
+        "booster juice": "Jamie Cassels Centre"
     }
 
     # Inputing UVic food outlets into the DB

@@ -15,7 +15,7 @@ BUILDING_METADATA = {
         "coords": [-123.30727, 48.46423],
         "image": "https://www.uvic.ca/services/food/assets/images/cove-stairs"
     },
-    "Farquhar Auditorium": {
+    "Jamie Cassels Centre": {
         "coords": [-123.31174, 48.46483],
         "image": "https://www.uvic.ca/services/food/where/noodlesweb.jpg"
     },
@@ -41,7 +41,7 @@ BUILDING_METADATA = {
     },
     "The Sub": {
         "coords": [-123.31327, 48.46485],
-        "image": "https://uvss.ca/wp-content/uploads/2021/08/Bean-There-1.jpg"
+        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUB_LOGO_WHITE-300x300.png"
     }
 }
 
@@ -69,7 +69,19 @@ STORE_METADATA = {
         "categories": ["all", "filter1", "filter3", "filter5"]
     },
     "felicita's campus pub": {
-        "image": "https://uvss.ca/wp-content/uploads/2021/08/Felicita-1.jpg"
+        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_FEL600px.png"
+    },
+    "bean there cafe": {
+        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_BT600px.png"
+    },
+    "the grill": {
+        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_GRILL600px.png"
+    },
+    "munchie bar": {
+        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_MUN600px.png"
+    },
+    "health food bar (hfb)": {
+        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_HFB600px.png"
     }
 }
 
@@ -88,9 +100,14 @@ def get_ui_stores():
     with engine.connect() as conn:
         outlets_rows = conn.execute(select(food_outlets)).fetchall()
         
+        EXCLUDED_OUTLETS = {"the cove", "mystic market"}
+
         for outlet in outlets_rows:
             o_id, o_name, o_loc = outlet
-            
+
+            if o_name.lower() in EXCLUDED_OUTLETS:
+                continue
+
             # Determine defaults based on building
             build_meta = BUILDING_METADATA.get(o_loc, {
                 "coords": [-123.31219, 48.46319], # UVic center default
@@ -149,5 +166,13 @@ def get_ui_stores():
                 "isClosed": is_closed,
                 "menu": menu_items
             })
+
+    LOCATION_ORDER = {
+        "Cove": 0,
+        "Jamie Cassels Centre": 1,
+        "The Sub": 2,
+        "McPherson Library": 3,
+    }
+    stores.sort(key=lambda s: LOCATION_ORDER.get(s["location"], 99))
 
     return jsonify(stores)
