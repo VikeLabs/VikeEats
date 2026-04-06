@@ -5,6 +5,7 @@
 
 import re
 from collections import OrderedDict
+import copy
 
 
 from flask import Flask, render_template, jsonify
@@ -25,21 +26,20 @@ app = Flask(__name__)
 
 @food_outlets_blueprint.route('/food_outlets', methods=['GET'])
 def get_food_outlets():
+    try:
+        food_outlets = get_food_outlets_dict()
+        return jsonify(food_outlets)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def get_food_outlets_dict():
     r = requests.get("https://www.uvic.ca/services/food/where/index.php")
     if r.status_code != 200:
-        return jsonify({"error": "Failed to retrieve page"}), 500
+        raise Exception("Failed to retrieve page")
 
     soup = BeautifulSoup(r.content, 'html.parser')
     food_outlets = parse(soup)
-    key_var = 'Monday - Thursday'
-    key_var = 'Tuesday, July 2 - Wednesday, July 31'
-    # date_adusted_list = is_within_date_range(key_var, food_outlets)
-
-    # ordered_list_of_pairs = [{"key": k, "value": v} for k, v in date_adusted_list.items()]
-    # ordered_list_of_pairs = [[key, value] for key, value in date_adusted_list.items()]
-
-    return jsonify(food_outlets)
-    # return jsonify(ordered_list_of_pairs)
+    return food_outlets
 
 def clean_text(tag):
     #NEXT TO DO Made header in <strong> tag and it time a header for the sub outlets in the another json section
@@ -68,54 +68,37 @@ def parse(soup):
     
     for section in sections:
         headers = section.find_all('h3')
-        print(len(headers))
         for header in headers:
             header_name = str(header.get_text().strip())
             food_outlets[header_name] = {}
-            print(f"header_name: ({header_name})")
             tables = section.find_all('table')
-            print("number of tables: ", len(tables))
             for table in tables:
                 rows = table.find_all('tr')
                 for row in rows:
                     cols = row.find_all('td')
                     if len(cols) == 2:
+                        outlet_names = clean_text(cols[0])
+                        hours_texts = clean_text(cols[1])
                         
-                        #splits the outlet names and hours into a list of strings
-                        # outlet_name = cols[0].get_text(separator="\n", strip=True)
-                        # outlet_name = outlet_name.split('\n')
-                        
-                        # hours = cols[1].get_text(separator="\n", strip=True)
-                        # hours = hours.split('\n')
-
-                        outlet_name = clean_text(cols[0])
-                        # outlet_name = outlet_name.split('\n')
-                        # print(f"outlet_name {outlet_name}")
-                        
-                        hours = clean_text(cols[1])
-                        # hours = 
-                        # print(f"hours {hours}")
-                        # hours = hours.split('\n')
-
-
-                        
-
-                        food_outlets[header_name].update(dict(zip(outlet_name, hours))) #adds the outlet name and hours to the dictionary
-                        # print(f"food_outlets: {food_outlets}")
-
-    #process hours into date time objects
-    time_ranges = copy.deepcopy(food_outlets)
-    # print(f"Scraped food outlets: {json.dumps(food_outlets, indent=2)}")
-    for day_range in food_outlets:
-        for outlet, time_range in food_outlets[day_range].items():
-            # food_outlets[day_range][outlet] = turn_to_datetime(time_range)
-            print(f"food_outlets: {outlet}: {food_outlets[day_range][outlet]}")
-
-    # parsed_outlets = {}
-    # for day_range, outlets in food_outlets.items():
-    #     parsed_outlets[day_range] = {}
-    #     for outlet, hours in outlets.items():
-    #         parsed_outlets[day_range][outlet] = turn_to_datetime(hours)
+                        for name, hours_text in zip(outlet_names, hours_texts):
+                            is_closed = "closed" in hours_text.lower()
+                            raw_hours = []
+                            if not is_closed:
+                                try:
+                                    # Simple parsing for now, could be improved
+                                    parts = hours_text.split('-')
+                                    if len(parts) == 2:
+                                        # This is a very basic placeholder for rawHours parsing
+                                        # since turn_to_datetime seems broken/incomplete
+                                        raw_hours = [{"start": parts[0].strip(), "end": parts[1].strip()}]
+                                except:
+                                    pass
+                            
+                            food_outlets[header_name][name] = {
+                                "isClosed": is_closed,
+                                "displayHours": hours_text,
+                                "rawHours": raw_hours
+                            }
 
     return food_outlets
 

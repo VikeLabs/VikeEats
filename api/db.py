@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, insert, ForeignKey, MetaData, Table, Column, Integer, Boolean, VARCHAR, TEXT, select
 from . import sub_hours
-from .food_outlets import get_food_outlets
+from .food_outlets import get_food_outlets_dict
 from .menu import mystic_cove_menu_dict, others_menus_dict
 from . import create_db
 import json
@@ -118,7 +118,11 @@ def merge_dicts(dict1, dict2):
 # Function to Normlize outlets names
 def normalize_name(name):
     # Convert to lowercase
-    name = name.lower()
+    name = name.lower().strip()
+    
+    # Remove 'the ' prefix if it exists
+    if name.startswith('the '):
+        name = name[4:]
     
     # Remove any trailing asterisks and whitespace
     name = re.sub(r'\*+$', '', name).strip()
@@ -147,18 +151,16 @@ def db_update_all():
     
     with engine.connect() as conn:
         clear_db(conn, metadata_obj)
+        conn.commit() # Ensure changes are committed
     
     # Sequential updates
-    ufo_res = db_ufo()
-    uoh_res = db_uoh()
-    uts_res = db_uts()
+    db_ufo()
+    db_uoh()
+    db_uts()
     um_res = db_um()
     
     return jsonify({
         "status": "Full database refresh complete",
-        "outlets": len(ufo_res),
-        "hours": len(uoh_res),
-        "timeslots": len(uts_res),
         "menus": um_res.get("status")
     })
 
@@ -195,7 +197,7 @@ def db_ufo():
     
     # Mapping for UVic food outlets to buildings
     building_mapping = {
-        "the cove": "Cove",
+        "cove": "Cove",
         "mystic market": "Jamie Cassels Centre",
         "mac's": "MacLaurin",
         "mac's bistro": "MacLaurin",
@@ -232,7 +234,7 @@ def db_ufo():
     }
 
     # Inputing UVic food outlets into the DB
-    uvic_hours_dict = get_food_outlets()
+    uvic_hours_dict = get_food_outlets_dict()
     with engine.connect() as conn:
         for day_range in uvic_hours_dict:
             for name in uvic_hours_dict[day_range]:
@@ -267,7 +269,7 @@ def db_uoh():
     metadata_obj.reflect(bind=engine)
 
     sub_hours_dict = sub_hours.get_sub_hours()
-    uvic_hours_dict = get_food_outlets()
+    uvic_hours_dict = get_food_outlets_dict()
     food_outlets = metadata_obj.tables["food_outlets"]
     operating_hours = metadata_obj.tables["operating_hours"]
 
@@ -349,7 +351,7 @@ def db_uts():
     metadata_obj.reflect(bind=engine)
 
     sub_hours_dict = sub_hours.get_sub_hours()
-    uvic_hours_dict = get_food_outlets()
+    uvic_hours_dict = get_food_outlets_dict()
     food_outlets = metadata_obj.tables["food_outlets"]
     operating_hours = metadata_obj.tables["operating_hours"]
     time_slots = metadata_obj.tables["time_slots"]
@@ -422,17 +424,25 @@ def db_uts():
                         raw_hours = [{'start': None, 'end': None}]
                     
                     for slot in raw_hours:
+                        start_time = slot['start']
+                        end_time = slot['end']
+                        
+                        if hasattr(start_time, 'strftime'):
+                            start_time = start_time.strftime('%I:%M %p')
+                        if hasattr(end_time, 'strftime'):
+                            end_time = end_time.strftime('%I:%M %p')
+
                         existing_entry = conn.execute(
                             time_slots.select().where(
                                 (time_slots.c.operating_hours_id == operating_hours_id) &
-                                (time_slots.c.start_time == slot['start'].strftime('%I:%M %p') if slot['start'] else None) &
-                                (time_slots.c.end_time == slot['end'].strftime('%I:%M %p') if slot['end'] else None)
+                                (time_slots.c.start_time == start_time) &
+                                (time_slots.c.end_time == end_time)
                             )).fetchone()
                         if not existing_entry:
                             conn.execute(time_slots.insert().values(
                                 operating_hours_id=operating_hours_id,
-                                start_time=slot['start'].strftime('%I:%M %p') if slot['start'] else None,
-                                end_time=slot['end'].strftime('%I:%M %p') if slot['end'] else None
+                                start_time=start_time,
+                                end_time=end_time
                             ))
         conn.commit()
 
@@ -465,22 +475,39 @@ def db_um():
 
     with engine.connect() as conn:
         for outlet_norm_name, mapping in MENU_MAPPING.items():
-            outlet_id = conn.execute(
-                select(food_outlets.c.id).where(food_outlets.c.name == outlet_norm_name)
+            parent_id = conn.execute(
+                select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(outlet_norm_name))
             ).scalar()
 
-            if not outlet_id: continue
+            if not parent_id: continue
 
             if mapping["type"] == "cove_mystic":
                 for sub_name, tab_id in mapping["sub_locations"].items():
+                    # Attempt to find sub-outlet ID for direct association
+                    sub_outlet_id = conn.execute(
+                        select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(sub_name))
+                    ).scalar()
+                    
+                    # If not found, try common name variations
+                    if not sub_outlet_id:
+                        variations = [sub_name.lower() + " pasta", sub_name.lower() + " pizza"]
+                        for var in variations:
+                            sub_outlet_id = conn.execute(
+                                select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(var))
+                            ).scalar()
+                            if sub_outlet_id: break
+
+                    # Target the sub-outlet if it exists, otherwise the parent
+                    target_id = sub_outlet_id if sub_outlet_id else parent_id
+                    
                     menu_id = conn.execute(
                         select(menus.c.id).where(
-                            (menus.c.food_outlet_id == outlet_id) & (menus.c.name == sub_name)
+                            (menus.c.food_outlet_id == target_id) & (menus.c.name == sub_name)
                         )
                     ).scalar()
                     if not menu_id:
-                        conn.execute(menus.insert().values(food_outlet_id=outlet_id, name=sub_name))
-                        menu_id = conn.execute(select(menus.c.id).where((menus.c.food_outlet_id == outlet_id) & (menus.c.name == sub_name))).scalar()
+                        conn.execute(menus.insert().values(food_outlet_id=target_id, name=sub_name))
+                        menu_id = conn.execute(select(menus.c.id).where((menus.c.food_outlet_id == target_id) & (menus.c.name == sub_name))).scalar()
 
                     try:
                         scraped_data = mystic_cove_menu_dict(mapping["url"], tab_id)
@@ -507,12 +534,12 @@ def db_um():
             elif mapping["type"] == "other":
                 menu_id = conn.execute(
                     select(menus.c.id).where(
-                        (menus.c.food_outlet_id == outlet_id) & (menus.c.name == "Main Menu")
+                        (menus.c.food_outlet_id == parent_id) & (menus.c.name == "Main Menu")
                     )
                 ).scalar()
                 if not menu_id:
-                    conn.execute(menus.insert().values(food_outlet_id=outlet_id, name="Main Menu"))
-                    menu_id = conn.execute(select(menus.c.id).where((menus.c.food_outlet_id == outlet_id) & (menus.c.name == "Main Menu"))).scalar()
+                    conn.execute(menus.insert().values(food_outlet_id=parent_id, name="Main Menu"))
+                    menu_id = conn.execute(select(menus.c.id).where((menus.c.food_outlet_id == parent_id) & (menus.c.name == "Main Menu"))).scalar()
 
                 try:
                     scraped_items = others_menus_dict(mapping["url"])

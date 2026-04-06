@@ -143,14 +143,13 @@ def get_ui_stores():
             """)
             diets = [r[0] for r in conn.execute(diet_stmt).fetchall()]
             
-            # Fetch menu sample
+            # Fetch all menu items
             menu_stmt = text(f"""
                 SELECT mi.name, mi.ingredients
                 FROM menu_items mi
                 JOIN menu_categories mc ON mi.category_id = mc.id
                 JOIN menus m ON mc.menu_id = m.id
                 WHERE m.food_outlet_id = {o_id}
-                LIMIT 5
             """)
             menu_items = [{"name": r[0], "description": r[1]} for r in conn.execute(menu_stmt).fetchall()]
 
