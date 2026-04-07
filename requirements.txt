@@ -3,3 +3,4 @@ Flask-CORS
 SQLAlchemy
 requests
 beautifulsoup4
+pypdf

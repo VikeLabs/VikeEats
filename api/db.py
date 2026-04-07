@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, MetaData, select
+from sqlalchemy import create_engine, MetaData, select, update
 from . import sub_hours
 from .food_outlets import get_food_outlets_dict
 from .menu import mystic_cove_menu_dict, others_menus_dict
@@ -504,12 +504,12 @@ def db_um():
                         if is_flat_items:
                             cat_id = get_or_create_category(conn, menu_categories, menu_id, "Main")
                             for item_name, details in scraped_data.items():
-                                process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
+                                process_scraped_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
                         else:
                             for cat_name, items in scraped_data.items():
                                 cat_id = get_or_create_category(conn, menu_categories, menu_id, cat_name)
                                 for item_name, details in iter_leaf_menu_items(items):
-                                    process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
+                                    process_scraped_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
                     except Exception as e:
                         print(f"Error scraping menu for {sub_name}: {e}")
 
@@ -568,6 +568,9 @@ def get_or_create_category(conn, table, menu_id, name):
     return cat_id
 
 def process_menu_item(conn, menu_items_table, restrictions_table, junction_table, cat_id, item_name, details):
+    new_ingredients = details.get("ingredients", "")
+    new_allergens = details.get("allergens", "")
+
     item_id = conn.execute(
         select(menu_items_table.c.id).where(
             (menu_items_table.c.category_id == cat_id) & (menu_items_table.c.name == item_name)
@@ -578,14 +581,34 @@ def process_menu_item(conn, menu_items_table, restrictions_table, junction_table
         conn.execute(menu_items_table.insert().values(
             category_id=cat_id,
             name=item_name,
-            ingredients=details.get("ingredients", ""),
-            allergens=details.get("allergens", "")
+            ingredients=new_ingredients,
+            allergens=new_allergens
         ))
         item_id = conn.execute(
             select(menu_items_table.c.id).where(
                 (menu_items_table.c.category_id == cat_id) & (menu_items_table.c.name == item_name)
             )
         ).scalar()
+    else:
+        existing_row = conn.execute(
+            select(menu_items_table.c.ingredients, menu_items_table.c.allergens).where(
+                menu_items_table.c.id == item_id
+            )
+        ).fetchone()
+        if existing_row:
+            updates = {}
+            old_ingredients = existing_row[0] or ""
+            old_allergens = existing_row[1] or ""
+            if new_ingredients and new_ingredients != old_ingredients:
+                updates["ingredients"] = new_ingredients
+            if new_allergens and new_allergens != old_allergens:
+                updates["allergens"] = new_allergens
+            if updates:
+                conn.execute(
+                    update(menu_items_table)
+                    .where(menu_items_table.c.id == item_id)
+                    .values(**updates)
+                )
     
     # Handle restrictions (icons + parsed allergens)
     restrictions = list(details.get("dietary restrictions", []))
@@ -611,6 +634,40 @@ def process_menu_item(conn, menu_items_table, restrictions_table, junction_table
         ).fetchone()
         if not existing_link:
             conn.execute(junction_table.insert().values(menu_item_id=item_id, restriction_id=rest_id))
+
+
+def process_scraped_item(conn, menu_items_table, restrictions_table, junction_table, cat_id, item_name, details):
+    pdf_products = details.get("pdf products", [])
+    if isinstance(pdf_products, list) and pdf_products:
+        for product in pdf_products:
+            product_name = str(product.get("name", "")).strip()
+            if not product_name:
+                continue
+            product_details = {
+                "dietary restrictions": details.get("dietary restrictions", []),
+                "ingredients": product.get("ingredients", ""),
+                "allergens": product.get("allergens", ""),
+            }
+            process_menu_item(
+                conn,
+                menu_items_table,
+                restrictions_table,
+                junction_table,
+                cat_id,
+                product_name,
+                product_details,
+            )
+        return
+
+    process_menu_item(
+        conn,
+        menu_items_table,
+        restrictions_table,
+        junction_table,
+        cat_id,
+        item_name,
+        details,
+    )
 
 # Displays FoodOutlets Currently saved in DB
 @db_blueprint.route('/db/food_outlets')

@@ -2,9 +2,41 @@ from flask import Blueprint, jsonify
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from io import BytesIO
+import re
+from pypdf import PdfReader
 
 # Create a blueprint for menus
 menu_blueprint = Blueprint('menu', __name__)
+PDF_DETAILS_CACHE = {}
+
+# Manual fallback skeleton: fill these values directly when source data is missing/noisy.
+# Key format:
+#   { "<tab-id>": { "<item name>": {"ingredients": "...", "allergens": "..."} } }
+MANUAL_ITEM_DETAILS = {
+    "tabs-soups": {
+        "Boston Clam Chowder": {"ingredients": "", "allergens": ""},
+        "Broccoli and Cheese": {"ingredients": "", "allergens": ""},
+        "Butternut Squash": {"ingredients": "", "allergens": ""},
+        "Cauliflower Cheese": {"ingredients": "", "allergens": ""},
+        "Chicken Corn Chowder": {"ingredients": "", "allergens": ""},
+        "Chicken Noodle": {"ingredients": "", "allergens": ""},
+        "Chicken with Wild Rice": {"ingredients": "", "allergens": ""},
+        "Cream of Mushroom": {"ingredients": "", "allergens": ""},
+        "Cream of Potato and Bacon": {"ingredients": "", "allergens": ""},
+        "Creamy Garden Cauliflower": {"ingredients": "", "allergens": ""},
+        "Creole Chicken Gumbo": {"ingredients": "", "allergens": ""},
+        "French Onion": {"ingredients": "", "allergens": ""},
+        "Golden Autumn Carrot": {"ingredients": "", "allergens": ""},
+        "Homestyle Minestrone": {"ingredients": "", "allergens": ""},
+        "Homestyle Vegetable Beef and Barley": {"ingredients": "", "allergens": ""},
+        "Italian Wedding": {"ingredients": "", "allergens": ""},
+        "Loaded Baked Potato": {"ingredients": "", "allergens": ""},
+        "Split Pea and Ham": {"ingredients": "", "allergens": ""},
+        "Tomato Ravioli": {"ingredients": "", "allergens": ""},
+        "Tomato Roasted Red Pepper": {"ingredients": "", "allergens": ""},
+    }
+}
 
 
 #UPDATED FUNCTIONS
@@ -99,7 +131,7 @@ def parse_location_section(soup, location, base_url):
     if not container:
         return {}
 
-    parsed = parse_heading_blocks(container, base_url)
+    parsed = parse_heading_blocks(container, base_url, location)
     if not parsed:
         return {}
 
@@ -109,7 +141,7 @@ def parse_location_section(soup, location, base_url):
     return parsed
 
 
-def parse_heading_blocks(container, base_url):
+def parse_heading_blocks(container, base_url, location):
     result = {}
     headers = container.find_all('h3', recursive=False)
 
@@ -124,13 +156,14 @@ def parse_heading_blocks(container, base_url):
 
         nested = first_child_container_with_headers(block)
         if nested:
-            nested_result = parse_heading_blocks(nested, base_url)
+            nested_result = parse_heading_blocks(nested, base_url, location)
             if nested_result:
                 result[name] = nested_result
                 continue
 
         details = parse_item_details(block, base_url)
         if details:
+            details = apply_manual_item_overrides(location, name, details)
             result[name] = details
 
     return result
@@ -162,6 +195,13 @@ def parse_item_details(item_div, base_url):
     dietary_restrictions = parse_dietary_restrictions(item_div)
     ingredients, allergens = parse_ingredients_and_allergens(item_div)
     details_link = find_detail_link(item_div, base_url)
+    pdf_products = []
+    if details_link and details_link.lower().endswith(".pdf"):
+        pdf_ingredients, pdf_allergens, pdf_products = extract_pdf_ingredients_allergens(details_link)
+        if not ingredients:
+            ingredients = pdf_ingredients
+        if not allergens:
+            allergens = pdf_allergens
 
     if not dietary_restrictions and not ingredients and not allergens and not details_link:
         return None
@@ -173,6 +213,8 @@ def parse_item_details(item_div, base_url):
     }
     if details_link:
         item_details['details link'] = details_link
+    if pdf_products:
+        item_details['pdf products'] = pdf_products
 
     return item_details
 
@@ -232,6 +274,137 @@ def find_detail_link(item_div, base_url):
         ):
             return urljoin(base_url, href)
     return ''
+
+
+def extract_pdf_ingredients_allergens(pdf_url):
+    if pdf_url in PDF_DETAILS_CACHE:
+        return PDF_DETAILS_CACHE[pdf_url]
+
+    ingredients = ''
+    allergens = ''
+    products = []
+    try:
+        response = requests.get(pdf_url, timeout=20)
+        if response.status_code != 200:
+            PDF_DETAILS_CACHE[pdf_url] = (ingredients, allergens, products)
+            return ingredients, allergens, products
+
+        reader = PdfReader(BytesIO(response.content))
+        text_parts = []
+        for page in reader.pages:
+            page_text = page.extract_text() or ''
+            if page_text:
+                text_parts.append(page_text)
+
+        pdf_text = re.sub(r'\s+', ' ', ' '.join(text_parts)).strip()
+        ingredients_match = re.search(
+            r'Ingredients\s*:\s*(.*?)(?:Contains\s*:|Allergen\s+Information|Receiving\s+Specifications|Shelf\s+life|$)',
+            pdf_text,
+            re.IGNORECASE
+        )
+        allergens_match = re.search(
+            r'Contains\s*:\s*(.*?)(?:Allergen\s+Information|Receiving\s+Specifications|Shelf\s+life|P\s*:\s*\d|$)',
+            pdf_text,
+            re.IGNORECASE
+        )
+
+        if ingredients_match:
+            ingredients = ingredients_match.group(1).strip(" .;")
+        if allergens_match:
+            allergens = allergens_match.group(1).strip(" .;")
+
+        products = extract_products_from_pdf_text(pdf_text)
+    except Exception:
+        pass
+
+    PDF_DETAILS_CACHE[pdf_url] = (ingredients, allergens, products)
+    return ingredients, allergens, products
+
+
+def extract_products_from_pdf_text(pdf_text):
+    products = []
+    seen_names = set()
+    title_pattern = re.compile(r'([A-Z][A-Za-z0-9/&,\-\'+ ]{2,80})\s+\d{2}/\d{2}/\d{4}')
+    title_matches = list(title_pattern.finditer(pdf_text))
+
+    for idx, match in enumerate(title_matches):
+        name = clean_product_name(match.group(1))
+        if not is_valid_product_name(name) or name.lower() in seen_names:
+            continue
+
+        start = match.end()
+        end = title_matches[idx + 1].start() if idx + 1 < len(title_matches) else len(pdf_text)
+        segment = pdf_text[start:end]
+        ingredients, allergens = extract_segment_ingredients_allergens(segment)
+        if not ingredients and not allergens:
+            continue
+
+        seen_names.add(name.lower())
+        products.append({
+            "name": name,
+            "ingredients": ingredients,
+            "allergens": allergens
+        })
+
+    return products
+
+
+def extract_segment_ingredients_allergens(segment_text):
+    ingredients = ''
+    allergens = ''
+    ingredients_match = re.search(
+        r'Ingredients?\s*[:;]?\s*(.*?)(?:Contains?|Allergen\s+Information|Allergens?|Receiving\s+Specifications|Shelf\s+life|$)',
+        segment_text,
+        re.IGNORECASE
+    )
+    allergens_match = re.search(
+        r'(?:Contains?|Allergens?)\s*[:;]?\s*(.*?)(?:Allergen\s+Information|Receiving\s+Specifications|Shelf\s+life|P\s*:\s*\d|$)',
+        segment_text,
+        re.IGNORECASE
+    )
+
+    if ingredients_match:
+        ingredients = ingredients_match.group(1).strip(" .;")
+    if allergens_match:
+        allergens = allergens_match.group(1).strip(" .;")
+    return ingredients, allergens
+
+
+def clean_product_name(name):
+    cleaned = re.sub(r'\s+', ' ', name).strip(" .;:-")
+    return cleaned
+
+
+def is_valid_product_name(name):
+    if not name:
+        return False
+    lowered = name.lower()
+    blocked = [
+        "ingredients",
+        "contains",
+        "allergen information",
+        "receiving specifications",
+        "shelf life",
+    ]
+    if lowered in blocked:
+        return False
+    if len(name) < 3:
+        return False
+    return True
+
+
+def apply_manual_item_overrides(location, item_name, item_details):
+    section_overrides = MANUAL_ITEM_DETAILS.get(location, {})
+    override = section_overrides.get(item_name, {})
+    if not override:
+        return item_details
+
+    merged = dict(item_details)
+    if override.get("ingredients"):
+        merged["ingredients"] = override["ingredients"]
+    if override.get("allergens"):
+        merged["allergens"] = override["allergens"]
+    return merged
 
 
 def is_item_details(value):
