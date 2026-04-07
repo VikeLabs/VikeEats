@@ -3,17 +3,11 @@
 # import requests
 # import json
 
-import re
-from collections import OrderedDict
-import copy
-
-
-from flask import Flask, render_template, jsonify
+from flask import Flask, jsonify
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 from flask import Blueprint
-from datetime import datetime
 # from flask_cors import CORS
 
 food_outlets_blueprint = Blueprint('food_outlets', __name__)
@@ -45,14 +39,6 @@ def clean_text(tag):
     #NEXT TO DO Made header in <strong> tag and it time a header for the sub outlets in the another json section
     text_list = (tag.stripped_strings)
     return text_list
-
-def clean_time_format(time_string):
-    pass
-    # Regex to find the gap between the time and the am/pm part
-    # pattern = re.compile(r'(?<=\d{1,2}[: ]?\d{0,2})\s(?=am|pm)')
-    # # Substitute the space with an empty string to remove it
-    # corrected_time_string = re.sub(pattern, '', time_string)
-    # return corrected_time_string
 
 def parse(soup):
 
@@ -101,11 +87,6 @@ def parse(soup):
                             }
 
     return food_outlets
-
-    
-from datetime import datetime
-
-from datetime import datetime
 
 #currently doesnt work quite right
 def turn_to_datetime(time_range):

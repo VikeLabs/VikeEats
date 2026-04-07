@@ -1,6 +1,6 @@
 
 from flask import Blueprint, jsonify, request
-from sqlalchemy import create_engine, MetaData, select, and_, or_
+from sqlalchemy import create_engine, MetaData, select, and_
 
 # Database configuration
 DB_PATH = 'vikeeats.db'

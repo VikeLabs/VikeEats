@@ -508,7 +508,7 @@ def db_um():
                         else:
                             for cat_name, items in scraped_data.items():
                                 cat_id = get_or_create_category(conn, menu_categories, menu_id, cat_name)
-                                for item_name, details in items.items():
+                                for item_name, details in iter_leaf_menu_items(items):
                                     process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
                     except Exception as e:
                         print(f"Error scraping menu for {sub_name}: {e}")
@@ -533,6 +533,32 @@ def db_um():
                     print(f"Error scraping menu for {outlet_norm_name}: {e}")
         conn.commit()
     return {"status": "Menu update complete"}
+
+
+def is_item_details(details):
+    return isinstance(details, dict) and {
+        "dietary restrictions",
+        "ingredients",
+        "allergens",
+    }.issubset(details.keys())
+
+
+def iter_leaf_menu_items(menu_dict):
+    """
+    Yield only lowest-level menu items from nested menu dictionaries.
+    Parent headers (grouping nodes) are skipped.
+    """
+    if not isinstance(menu_dict, dict):
+        return
+
+    for key, value in menu_dict.items():
+        if is_item_details(value):
+            yield key, value
+            continue
+
+        if isinstance(value, dict):
+            for item_name, details in iter_leaf_menu_items(value):
+                yield item_name, details
 
 def get_or_create_category(conn, table, menu_id, name):
     cat_id = conn.execute(select(table.c.id).where((table.c.menu_id == menu_id) & (table.c.name == name))).scalar()
