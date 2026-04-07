@@ -1,10 +1,10 @@
-from sqlalchemy import create_engine, insert, ForeignKey, MetaData, Table, Column, Integer, Boolean, VARCHAR, TEXT, select
+from sqlalchemy import create_engine, MetaData, select
 from . import sub_hours
 from .food_outlets import get_food_outlets_dict
 from .menu import mystic_cove_menu_dict, others_menus_dict
 from . import create_db
 import json
-from flask import Flask, Blueprint, Response, jsonify
+from flask import Flask, Blueprint, jsonify
 import os
 import re
 
@@ -98,22 +98,6 @@ def clear_db(conn, metadata):
         if table_name in metadata.tables:
             conn.execute(metadata.tables[table_name].delete())
     conn.commit()
-
-# Funtion to merge dictionaries
-def merge_dicts(dict1, dict2):
-    """
-    Recursively merge two dictionaries.
-    If a key exists in both dictionaries and the values are dictionaries, merge them recursively.
-    Otherwise, keep the value from dict2 (overwrite dict1).
-    """
-    for key, value in dict2.items():
-        if key in dict1 and isinstance(dict1[key], dict) and isinstance(value, dict):
-            # If both values are dictionaries, merge them recursively
-            merge_dicts(dict1[key], value)
-        else:
-            # Otherwise, overwrite dict1's value with dict2's value
-            dict1[key] = value
-    return dict1
 
 # Function to Normlize outlets names
 def normalize_name(name):
@@ -512,14 +496,12 @@ def db_um():
                     try:
                         scraped_data = mystic_cove_menu_dict(mapping["url"], tab_id)
                         
-                        # Use the same logic as menu.py to determine if it has categories
-                        alt_locations = [
-                            'tabs-verde', 'tabs-mykonos', 'tabs-vikes-grill', 'tabs-bento',
-                            'tabs-the-sandwich-lab', 'tabs-nonnas', 'tabs-feast',
-                            'tabs-breads', 'tabs-halal', 'tabs-baked-goods', 'tabs-soups'
-                        ]
+                        first_value = next(iter(scraped_data.values()), None)
+                        is_flat_items = isinstance(first_value, dict) and (
+                            "dietary restrictions" in first_value
+                        )
 
-                        if tab_id in alt_locations:
+                        if is_flat_items:
                             cat_id = get_or_create_category(conn, menu_categories, menu_id, "Main")
                             for item_name, details in scraped_data.items():
                                 process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)

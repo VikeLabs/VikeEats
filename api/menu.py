@@ -1,6 +1,7 @@
-from flask import Blueprint, jsonify, url_for
+from flask import Blueprint, jsonify
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 # Create a blueprint for menus
 menu_blueprint = Blueprint('menu', __name__)
@@ -16,17 +17,7 @@ def mystic_cove_menu_dict(url, location):
     #extract the menu items from the webpage
     soup = BeautifulSoup(r.content, 'html.parser')
     
-    # Kiosks that don't have sub-categories (items listed directly under h3 headers)
-    alt_locations = [
-        'tabs-verde', 'tabs-mykonos', 'tabs-vikes-grill', 'tabs-bento',
-        'tabs-the-sandwich-lab', 'tabs-nonnas', 'tabs-feast',
-        'tabs-breads', 'tabs-halal', 'tabs-baked-goods', 'tabs-soups'
-    ]
-    
-    if location in alt_locations:
-        menu_items = parse_cove_alt(soup, location)
-    else:
-        menu_items = parse(soup, location)
+    menu_items = parse_location_section(soup, location, url)
 
     return menu_items
 
@@ -57,42 +48,7 @@ def others_menus(url):
 
 @menu_blueprint.route('/menu')
 def menu_home():
-    # return url_for('menu.cove_menu'), url_for('menu.mystic_menu')
-    return "Welcome to the menu page <br>" + "<br>Cove Menu: " + url_for('menu.cove_menu') + "<br>Mystic Menu: " + url_for('menu.mystic_menu')
-
-@menu_blueprint.route('/menu/cove', methods=['GET'])
-def cove_menu():
-    #TODO: Implement this function
-
-    #get webpage and check its 200 ok
-
-    #extract the menu items from the webpage
-
-    #return the menu items as json
-
-    #sample menu items feel free to delete
-    menu_items = [
-        {"name": "Cove Burger", "price": 9.99, "category": "Main Course"},
-        {"name": "Cove Fries", "price": 3.99, "category": "Sides"},
-        {"name": "Cove Coke", "price": 1.99, "category": "Drinks"},
-        {"name": "Cove Salad", "price": 4.99, "category": "Appetizers"},
-    ]
-    return jsonify(menu_items)
-
-@menu_blueprint.route('/menu/mystic', methods=['GET'])
-def mystic_menu():
-    #TODO: Implement this function
-
-    #get webpage and check its 200 ok
-
-    #extract the menu items from the webpage
-
-    #return the menu items as json
-
-    #sample menu items feel free to delete
-
-#return json for different mystic locations
-    return False
+    return "Welcome to the menu page"
 
 @menu_blueprint.route('/menu/mystic/chopbox')
 def chopbox_menu():
@@ -134,146 +90,155 @@ def sci_cafe_menu():
 
 
 
-def parse(soup, location):
-    dict = {}
-
+def parse_location_section(soup, location, base_url):
     section = soup.find(id=location)
-    if not section: return dict
-    
-    # Use find because items are usually wrapped in a container div
+    if not section:
+        return {}
+
     container = section.find('div')
-    if not container: return dict
-    
-    categories = container.find_all('h3', recursive=False)
+    if not container:
+        return {}
 
-    for category in categories:
-        cat_name = category.get_text(strip=True)
-        category_div = category.find_next_sibling('div')
-        if not category_div: continue
-        
-        # Look for nested accordions
-        inner_container = category_div.find('div')
-        if not inner_container: continue
-        
-        menu_items = inner_container.find_all('h3', recursive=False) 
-        
-        category_dict = {}
+    parsed = parse_heading_blocks(container, base_url)
+    if not parsed:
+        return {}
 
-        for item in menu_items:
-            item_name = item.get_text(strip=True)
-            #get dietary restriction information
-            item_div = item.find_next_sibling('div')
-            if not item_div: continue
-            
-            dietary_icons = item_div.find_all('img')
-            dietary_restrictions = []
-            #find which icons apply
-            for icon in dietary_icons:
-                src = icon.get('src', '').lower()
-                if 'vegan' in src:
-                    dietary_restrictions.append('vegan')
-                elif 'vegetarian' in src:
-                    dietary_restrictions.append('vegetarian')
-                elif 'gluten-free' in src or 'without-gluten' in src:
-                    dietary_restrictions.append('gluten free')
-                elif 'dairy-free' in src or 'without-dairy' in src:
-                    dietary_restrictions.append('dairy free')
+    # Keep existing response shape: flat item map when no category layer exists.
+    if all(is_item_details(value) for value in parsed.values()):
+        return parsed
+    return parsed
 
-            #get ingredients and allergens
-            p_tags = item_div.find_all('p')
-            div_tags = item_div.find_all('div')
 
-            ingredients = ''
-            allergens = ''
-            for tag in p_tags + div_tags:
-                tag_text = tag.text.strip()
-                if 'Ingredients:' in tag_text:
-                    ingredients = tag_text
-                elif 'Contains:' in tag_text:
-                    allergens = tag_text
+def parse_heading_blocks(container, base_url):
+    result = {}
+    headers = container.find_all('h3', recursive=False)
 
-            # Clean labels
-            if ingredients.startswith('Ingredients:'):
-                try:
-                    ingredients = ingredients.replace('\u00a0', ' ').split(':', 1)[1].strip()
-                except: pass
-            
-            if allergens.startswith('Contains:'):
-                try:
-                    allergens = allergens.replace('\u00a0', ' ').split(':', 1)[1].strip()
-                except: pass
+    for header in headers:
+        name = header.get_text(strip=True)
+        if not name:
+            continue
 
-            menu_item_dict = {
-                'dietary restrictions': dietary_restrictions,
-                'ingredients': ingredients,
-                'allergens': allergens
-            }
-            category_dict[item_name] = menu_item_dict
-            
-        dict[cat_name] = category_dict
-    return dict
+        block = next_div_sibling(header)
+        if not block:
+            continue
 
-# An alternate parse function to take care of cove items without sub-categories
-def parse_cove_alt(soup, location):
-    dict = {}
+        nested = first_child_container_with_headers(block)
+        if nested:
+            nested_result = parse_heading_blocks(nested, base_url)
+            if nested_result:
+                result[name] = nested_result
+                continue
 
-    section = soup.find(id=location)
-    if not section: return dict
-    
-    container = section.find('div')
-    if not container: return dict
-    
-    items = container.find_all('h3', recursive=False)
+        details = parse_item_details(block, base_url)
+        if details:
+            result[name] = details
 
-    for item in items:
-        item_name = item.get_text(strip=True)
-        item_div = item.find_next_sibling('div')
-        if not item_div: continue
-        
-        dietary_icons = item_div.find_all('img')
-        dietary_restrictions = []
-        for icon in dietary_icons:
-            src = icon.get('src', '').lower()
-            if 'vegan' in src:
-                dietary_restrictions.append('vegan')
-            elif 'vegetarian' in src:
-                dietary_restrictions.append('vegetarian')
-            elif 'gluten-free' in src or 'without-gluten' in src:
-                dietary_restrictions.append('gluten free')
-            elif 'dairy-free' in src or 'without-dairy' in src:
-                dietary_restrictions.append('dairy free')
-            elif 'halal' in src:
-                dietary_restrictions.append('halal')
+    return result
 
-        p_tags = item_div.find_all('p')
-        div_tags = item_div.find_all('div')
 
-        ingredients = ''
-        allergens = ''
-        for tag in p_tags + div_tags:
-            tag_text = tag.text.strip()
-            if 'Ingredients:' in tag_text:
-                ingredients = tag_text
-            elif 'Contains:' in tag_text:
-                allergens = tag_text
+def next_div_sibling(tag):
+    sibling = tag.next_sibling
+    while sibling:
+        if getattr(sibling, 'name', None) == 'div':
+            return sibling
+        sibling = sibling.next_sibling
+    return None
 
-        if ingredients.startswith('Ingredients:'):
-            try:
-                ingredients = ingredients.replace('\u00a0', ' ').split(':', 1)[1].strip()
-            except: pass
-        
-        if allergens.startswith('Contains:'):
-            try:
-                allergens = allergens.replace('\u00a0', ' ').split(':', 1)[1].strip()
-            except: pass
 
-        menu_item_dict = {
-            'dietary restrictions': dietary_restrictions,
-            'ingredients': ingredients,
-            'allergens': allergens
-        }
-        dict[item_name] = menu_item_dict
-    return dict
+def first_child_container_with_headers(container):
+    candidate = container
+    for _ in range(4):
+        direct_headers = candidate.find_all('h3', recursive=False)
+        if direct_headers:
+            return candidate
+        child_divs = candidate.find_all('div', recursive=False)
+        if len(child_divs) != 1:
+            return None
+        candidate = child_divs[0]
+    return None
+
+
+def parse_item_details(item_div, base_url):
+    dietary_restrictions = parse_dietary_restrictions(item_div)
+    ingredients, allergens = parse_ingredients_and_allergens(item_div)
+    details_link = find_detail_link(item_div, base_url)
+
+    if not dietary_restrictions and not ingredients and not allergens and not details_link:
+        return None
+
+    item_details = {
+        'dietary restrictions': dietary_restrictions,
+        'ingredients': ingredients,
+        'allergens': allergens
+    }
+    if details_link:
+        item_details['details link'] = details_link
+
+    return item_details
+
+
+def parse_dietary_restrictions(item_div):
+    restrictions = []
+    for icon in item_div.find_all('img'):
+        src = icon.get('src', '').lower()
+        if 'vegan' in src:
+            restrictions.append('vegan')
+        elif 'vegetarian' in src:
+            restrictions.append('vegetarian')
+        elif 'gluten-free' in src or 'without-gluten' in src:
+            restrictions.append('gluten free')
+        elif 'dairy-free' in src or 'without-dairy' in src:
+            restrictions.append('dairy free')
+        elif 'halal' in src:
+            restrictions.append('halal')
+    return restrictions
+
+
+def parse_ingredients_and_allergens(item_div):
+    ingredients = ''
+    allergens = ''
+    for tag in item_div.find_all(['p', 'div']):
+        text = tag.get_text(" ", strip=True).replace('\u00a0', ' ')
+        if not ingredients and 'Ingredients:' in text:
+            ingredients = clean_detail_label(text, 'Ingredients:')
+        if not allergens and 'Contains:' in text:
+            allergens = clean_detail_label(text, 'Contains:')
+    return ingredients, allergens
+
+
+def clean_detail_label(value, label):
+    if value.startswith(label):
+        try:
+            return value.split(':', 1)[1].strip()
+        except Exception:
+            return value
+    return value
+
+
+def find_detail_link(item_div, base_url):
+    for link in item_div.find_all('a', href=True):
+        href = link.get('href', '').strip()
+        if not href:
+            continue
+
+        href_lower = href.lower()
+        text_lower = link.get_text(' ', strip=True).lower()
+        if (
+            href_lower.endswith('.pdf')
+            or '.pdf?' in href_lower
+            or 'allergen' in text_lower
+            or 'ingredient' in text_lower
+            or 'menu' in text_lower
+        ):
+            return urljoin(base_url, href)
+    return ''
+
+
+def is_item_details(value):
+    if not isinstance(value, dict):
+        return False
+    required_keys = {'dietary restrictions', 'ingredients', 'allergens'}
+    return required_keys.issubset(set(value.keys()))
 
 def parse_list(soup):
     menu_items = []
