@@ -295,7 +295,7 @@ def extract_pdf_ingredients_allergens(pdf_url):
 
         pdf_text = re.sub(r'\s+', ' ', ' '.join(text_parts)).strip()
         ingredients_match = re.search(
-            r'Ingredients\s*:\s*(.*?)(?:Contains\s*:|Allergen\s+Information|Receiving\s+Specifications|Shelf\s+life|$)',
+            r'Ingredients\s*:\s*(.*?)(?:I?NGR[ÉE]DIENTS\s*:|Contains\s*:|Allergen\s+Information|Receiving\s+Specifications|Shelf\s+life|$)',
             pdf_text,
             re.IGNORECASE
         )
@@ -361,7 +361,7 @@ def extract_segment_ingredients_allergens(segment_text):
     ingredients = ''
     allergens = ''
     ingredients_match = re.search(
-        r'Ingredients?\s*[:;]?\s*(.*?)(?:Contains?|Allergen\s+Information|Allergens?|Receiving\s+Specifications|Shelf\s+life|$)',
+        r'Ingredients?\s*[:;]?\s*(.*?)(?:I?NGR[ÉE]DIENTS?\s*[:;]|Contains?|Allergen\s+Information|Allergens?|Receiving\s+Specifications|Shelf\s+life|$)',
         segment_text,
         re.IGNORECASE
     )
