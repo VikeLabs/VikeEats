@@ -74,7 +74,7 @@ STORE_METADATA = {
     "bean there cafe": {
         "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_BT600px.png"
     },
-    "the grill": {
+    "grill": {
         "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_GRILL600px.png"
     },
     "munchie bar": {

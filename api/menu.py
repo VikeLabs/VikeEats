@@ -203,9 +203,6 @@ def parse_item_details(item_div, base_url):
         if not allergens:
             allergens = pdf_allergens
 
-    if not dietary_restrictions and not ingredients and not allergens and not details_link:
-        return None
-
     item_details = {
         'dietary restrictions': dietary_restrictions,
         'ingredients': ingredients,
@@ -324,7 +321,7 @@ def extract_pdf_ingredients_allergens(pdf_url):
 def extract_products_from_pdf_text(pdf_text):
     products = []
     seen_names = set()
-    title_pattern = re.compile(r'([A-Z][A-Za-z0-9/&,\-\'+ ]{2,80})\s+\d{2}/\d{2}/\d{4}')
+    title_pattern = re.compile(r'([A-Z][A-Za-z0-9/&,\-\'+ ]{2,80})\s+\d{2}/\d{2}/(?:\d{4}|\d{2})')
     title_matches = list(title_pattern.finditer(pdf_text))
 
     for idx, match in enumerate(title_matches):
@@ -336,6 +333,17 @@ def extract_products_from_pdf_text(pdf_text):
         end = title_matches[idx + 1].start() if idx + 1 < len(title_matches) else len(pdf_text)
         segment = pdf_text[start:end]
         ingredients, allergens = extract_segment_ingredients_allergens(segment)
+
+        # If not found after the title, check the text before it (some PDFs place ingredients before the title)
+        if not ingredients or not allergens:
+            prev_end = title_matches[idx - 1].end() if idx > 0 else 0
+            prev_segment = pdf_text[prev_end:match.start()]
+            prev_ingredients, prev_allergens = extract_segment_ingredients_allergens(prev_segment)
+            if not ingredients:
+                ingredients = prev_ingredients
+            if not allergens:
+                allergens = prev_allergens
+
         if not ingredients and not allergens:
             continue
 
@@ -372,6 +380,8 @@ def extract_segment_ingredients_allergens(segment_text):
 
 def clean_product_name(name):
     cleaned = re.sub(r'\s+', ' ', name).strip(" .;:-")
+    # Strip leading Canadian postal codes (e.g. "V8T 4K2") and address fragments
+    cleaned = re.sub(r'^[A-Z]\d[A-Z]\s*\d[A-Z]\d\s*', '', cleaned).strip()
     return cleaned
 
 
