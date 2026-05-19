@@ -2,12 +2,48 @@ from flask import Blueprint, jsonify
 from sqlalchemy import create_engine, MetaData, select, text
 from datetime import datetime
 import calendar
+from collections import OrderedDict
 
 # Database configuration
 DB_PATH = 'vikeeats.db'
 DB_URL = f"sqlite:///{DB_PATH}"
 
 ui_blueprint = Blueprint('ui', __name__)
+
+
+def build_menu_sections_from_rows(rows):
+    """
+    Rows: (menu_name, category_name, item_name, ingredients, allergens)
+    Returns { "sections": [ { "title", "categories": [ { "name", "items" } ] } ] }
+    """
+    tree = OrderedDict()
+    for r in rows:
+        menu_name, category_name, item_name = r[0], r[1], r[2]
+        ingredients, allergens = (r[3] or "").strip(), (r[4] or "").strip()
+        if menu_name not in tree:
+            tree[menu_name] = OrderedDict()
+        if category_name not in tree[menu_name]:
+            tree[menu_name][category_name] = []
+        entry = {"name": item_name}
+        if ingredients:
+            entry["description"] = ingredients
+        if allergens:
+            entry["allergens"] = allergens
+        tree[menu_name][category_name].append(entry)
+
+    sections = []
+    for menu_name, categories in tree.items():
+        sections.append(
+            {
+                "title": menu_name,
+                "categories": [
+                    {"name": cat_name, "items": items}
+                    for cat_name, items in categories.items()
+                ],
+            }
+        )
+    return {"sections": sections}
+
 
 # Building coordinates mapping
 BUILDING_METADATA = {
@@ -46,44 +82,44 @@ BUILDING_METADATA = {
 }
 
 # Specific store overrides
-STORE_METADATA = {
-    "the cove": {
-        "categories": ["all", "filter1", "filter2", "filter3", "filter4", "filter5"]
-    },
-    "biblio cafe": {
-        "categories": ["all", "filter1"]
-    },
-    "mac's bistro": {
-        "categories": ["all", "filter2"]
-    },
-    "mystic market": {
-        "categories": ["all", "filter3"]
-    },
-    "nibbles & bytes cafe": {
-        "categories": ["all", "filter4"]
-    },
-    "sci cafe": {
-        "categories": ["all", "filter5"]
-    },
-    "arts cafe": {
-        "categories": ["all", "filter1", "filter3", "filter5"]
-    },
-    "felicita's campus pub": {
-        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_FEL600px.png"
-    },
-    "bean there cafe": {
-        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_BT600px.png"
-    },
-    "the grill": {
-        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_GRILL600px.png"
-    },
-    "munchie bar": {
-        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_MUN600px.png"
-    },
-    "health food bar (hfb)": {
-        "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_HFB600px.png"
-    }
-}
+# STORE_METADATA = {
+#     "the cove": {
+#         "categories": ["all", "filter1", "filter2", "filter3", "filter4", "filter5"]
+#     },
+#     "biblio cafe": {
+#         "categories": ["all", "filter1"]
+#     },
+#     "mac's bistro": {
+#         "categories": ["all", "filter2"]
+#     },
+#     "mystic market": {
+#         "categories": ["all", "filter3"]
+#     },
+#     "nibbles & bytes cafe": {
+#         "categories": ["all", "filter4"]
+#     },
+#     "sci cafe": {
+#         "categories": ["all", "filter5"]
+#     },
+#     "arts cafe": {
+#         "categories": ["all", "filter1", "filter3", "filter5"]
+#     },
+#     "felicita's campus pub": {
+#         "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_FEL600px.png"
+#     },
+#     "bean there cafe": {
+#         "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_BT600px.png"
+#     },
+#     "the grill": {
+#         "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_GRILL600px.png"
+#     },
+#     "munchie bar": {
+#         "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_MUN600px.png"
+#     },
+#     "health food bar (hfb)": {
+#         "image": "https://uvss.ca/wp-content/uploads/2021/06/SUBBrands_HFB600px.png"
+#     }
+# }
 
 @ui_blueprint.route('/ui/stores')
 def get_ui_stores():
@@ -143,15 +179,17 @@ def get_ui_stores():
             """)
             diets = [r[0] for r in conn.execute(diet_stmt).fetchall()]
             
-            # Fetch all menu items
-            menu_stmt = text(f"""
-                SELECT mi.name, mi.ingredients
+            menu_stmt = text("""
+                SELECT m.name AS menu_name, mc.name AS category_name, mi.name AS item_name,
+                       mi.ingredients, mi.allergens
                 FROM menu_items mi
                 JOIN menu_categories mc ON mi.category_id = mc.id
                 JOIN menus m ON mc.menu_id = m.id
-                WHERE m.food_outlet_id = {o_id}
+                WHERE m.food_outlet_id = :oid
+                ORDER BY m.name, mc.name, mi.name
             """)
-            menu_items = [{"name": r[0], "description": r[1]} for r in conn.execute(menu_stmt).fetchall()]
+            menu_rows = conn.execute(menu_stmt, {"oid": o_id}).fetchall()
+            menu_payload = build_menu_sections_from_rows(menu_rows)
 
             stores.append({
                 "id": o_id,
@@ -163,7 +201,7 @@ def get_ui_stores():
                 "supportedDiets": diets,
                 "time": display_hours,
                 "isClosed": is_closed,
-                "menu": menu_items
+                "menu": menu_payload,
             })
 
     LOCATION_ORDER = {

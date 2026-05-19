@@ -5,7 +5,6 @@ import MapLayer from "./map";
 import MarkerLayer from "./marker";
 import UserLocationMarker from "./UserLocationMarker";
 import CardsContainer from "./cards-manager";
-import { API_BASE_URL } from "./config";
 
 /**
  * The main application component.
@@ -13,6 +12,7 @@ import { API_BASE_URL } from "./config";
  */
 const App = () => {
   const [storesData, setStoresData] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(null);
 
   useEffect(() => {
     fetch(`/api/ui/stores`)
@@ -21,14 +21,20 @@ const App = () => {
       .catch((error) => console.error("Error fetching ui/stores:", error));
   }, []);
 
+  const selectedOutletId = selectedStore?.id ?? null;
+
   return (
     <div className="relative min-h-screen">
       <MapLayer />
-      <MarkerLayer stores={storesData} />
+      <MarkerLayer stores={storesData} selectedOutletId={selectedOutletId} />
       <UserLocationMarker />
       <FilterButtons />
       <NavBar />
-      <CardsContainer stores={storesData} />
+      <CardsContainer
+        stores={storesData}
+        selectedStore={selectedStore}
+        onSelectedStoreChange={setSelectedStore}
+      />
     </div>
   );
 };

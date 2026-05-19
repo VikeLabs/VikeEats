@@ -1,76 +1,190 @@
-/* MaximizedCards.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* maximized-cards — modal detail panel; matches Navbar / minimized card palette */
 
 .modal-overlay {
-  @apply fixed inset-0 z-50 flex items-center justify-center;
-  animation: fadeIn 0.3s ease-in-out;
+  @apply fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .modal-bg {
-  @apply absolute inset-0 bg-gray-800 opacity-50;
+  @apply absolute inset-0 backdrop-blur-[2px];
+  /* primary-dark #002754 — opacity modifiers on custom colors break inside @apply */
+  background-color: rgba(0, 39, 84, 0.45);
 }
 
 .modal-content {
-  @apply relative bg-white rounded-lg shadow-lg overflow-hidden;
-  width: 85%;
-  height: 85%;
+  @apply relative flex max-h-[min(90vh,880px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-gray-100 bg-white font-header-regular text-primary-dark shadow-dark;
 }
 
 .close-btn {
-  @apply absolute top-2 right-2 text-white bg-gray-700 rounded-full p-2 hover:bg-gray-600 focus:outline-none;
+  @apply absolute right-3 top-3 z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200/90 bg-white/95 text-xl font-light leading-none text-primary-dark shadow-md transition hover:bg-white hover:text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-light focus-visible:ring-offset-2;
 }
 
 .modal-body {
-  @apply flex flex-col h-full;
+  @apply flex min-h-0 flex-1 flex-col md:flex-row;
 }
 
 .image-container {
-  @apply w-full h-1/2 overflow-hidden;
+  @apply relative h-44 w-full shrink-0 overflow-hidden bg-gray-100 md:h-auto md:w-[42%] md:min-h-[280px];
+}
+
+.image-container--logo {
+  @apply bg-primary-dark;
 }
 
 .image-style {
-  @apply w-full h-full object-cover bg-gray-500;
+  @apply h-full w-full object-cover;
+}
+
+.image-style--logo {
+  @apply object-contain p-6;
 }
 
 .details-container {
-  @apply h-1/2 p-6 overflow-auto;
+  @apply flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6 md:py-7;
+}
+
+.modal-header {
+  @apply border-b border-gray-100 pb-4;
 }
 
 .store-title {
-  @apply text-2xl font-bold mb-2;
+  @apply text-xl font-bold tracking-tight text-primary-dark sm:text-2xl;
 }
 
-.store-info {
-  @apply text-gray-600 mb-4;
+.store-meta {
+  @apply mt-2 flex flex-wrap items-center gap-2;
+}
+
+.store-location {
+  @apply inline-flex items-center rounded-md bg-gray-50 px-2.5 py-1 text-sm;
+  color: rgba(0, 39, 84, 0.8);
+}
+
+.store-status {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary-dark;
+  background-color: rgba(190, 231, 249, 0.8); /* accent-light-blue #BEE7F9 */
+}
+
+.store-status--closed {
+  @apply bg-gray-200;
+  color: rgba(0, 39, 84, 0.7);
 }
 
 .section {
-  @apply mb-4;
+  @apply space-y-2;
+}
+
+.section-hours {
+  @apply rounded-lg border border-gray-100 px-4 py-3;
+  background-color: rgba(249, 250, 251, 0.85);
 }
 
 .section-title {
-  @apply text-lg font-semibold;
+  @apply text-xs font-bold uppercase tracking-wider text-secondary;
+}
+
+.hours-value {
+  @apply text-base text-primary-dark;
+}
+
+.diet-list {
+  @apply flex list-none flex-wrap gap-2 p-0;
+}
+
+.diet-pill {
+  @apply rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs;
+  color: rgba(0, 39, 84, 0.85);
+}
+
+.section-menu .section-title {
+  @apply mb-1;
+}
+
+.menu-sections {
+  @apply flex flex-col gap-3;
+}
+
+.menu-section-title {
+  @apply mb-2 text-sm font-semibold text-primary-dark;
+}
+
+.menu-category-list {
+  @apply flex flex-col gap-2;
+}
+
+.menu-category {
+  @apply overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm;
+}
+
+.menu-category-summary {
+  @apply flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-3 font-semibold text-primary-dark transition hover:bg-gray-50;
+  list-style: none;
+}
+
+.menu-category-summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu-category-name {
+  @apply flex-1;
+}
+
+.menu-category-summary::after {
+  content: "";
+  flex-shrink: 0;
+  margin-top: -0.15em;
+  display: inline-block;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  padding: 0.22em;
+  opacity: 0.55;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.menu-category[open] .menu-category-summary::after {
+  margin-top: 0.1em;
+  transform: rotate(-135deg);
+}
+
+.menu-list {
+  @apply m-0 list-none space-y-2 p-0;
+}
+
+.menu-list--nested {
+  @apply space-y-2 border-t border-gray-100 bg-gray-50/50 px-2 py-3;
 }
 
 .menu-item {
-  @apply mb-2;
+  @apply rounded-lg border border-gray-100 bg-white px-3 py-3 shadow-sm transition hover:border-gray-200;
+}
+
+.menu-item-head {
+  @apply flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1;
 }
 
 .item-name {
-  @apply font-medium;
+  @apply font-semibold text-primary-dark;
 }
 
 .item-price {
-  @apply text-gray-600;
+  @apply shrink-0 text-sm font-medium text-secondary;
 }
 
 .item-description {
-  @apply text-gray-500 text-sm;
+  @apply mt-1.5 text-sm leading-relaxed;
+  color: rgba(0, 39, 84, 0.65);
 }
 
-/* Fade-in animation keyframes */
+.item-allergens {
+  @apply mt-1.5 text-xs leading-relaxed;
+  color: rgba(0, 39, 84, 0.55);
+}
+
+.item-allergens-label {
+  @apply font-semibold text-primary-dark/70;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

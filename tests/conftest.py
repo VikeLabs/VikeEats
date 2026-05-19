@@ -7,15 +7,14 @@ import sqlalchemy as sa
 # Add the project root to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from api import create_app
+from api import app as flask_app
 
 @pytest.fixture
 def app():
-    app = create_app()
-    app.config.update({
+    flask_app.config.update({
         "TESTING": True,
     })
-    yield app
+    yield flask_app
 
 @pytest.fixture
 def client(app):
