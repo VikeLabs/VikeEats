@@ -1,0 +1,42 @@
+.search-container {
+  @apply relative;
+}
+
+.search-controls {
+  @apply flex items-center gap-2;
+}
+
+.search-input {
+  @apply w-48 px-3 py-1.5 rounded-md border border-gray-300 text-sm text-primary-dark
+         focus:outline-none focus:border-blue-400;
+}
+
+.search-select {
+  @apply px-2 py-1.5 rounded-md border border-gray-300 text-sm text-primary-dark
+         bg-white focus:outline-none focus:border-blue-400 cursor-pointer;
+}
+
+.search-dropdown {
+  @apply absolute top-full left-0 w-96 max-h-72 overflow-y-auto bg-white border border-gray-200
+         rounded-md shadow-lg mt-1 z-50;
+}
+
+.search-result-item {
+  @apply px-3 py-2 border-b border-gray-100 cursor-pointer hover:bg-gray-50;
+}
+
+.search-result-name {
+  @apply font-semibold text-sm text-primary-dark;
+}
+
+.search-result-outlet {
+  @apply text-xs text-gray-500;
+}
+
+.search-result-diets {
+  @apply text-xs text-green-600 mt-0.5;
+}
+
+.search-no-results {
+  @apply px-3 py-4 text-sm text-gray-400 text-center;
+}

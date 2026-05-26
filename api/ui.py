@@ -135,14 +135,10 @@ def get_ui_stores():
     
     with engine.connect() as conn:
         outlets_rows = conn.execute(select(food_outlets)).fetchall()
-        
-        EXCLUDED_OUTLETS = {"the cove", "mystic market"}
 
         for outlet in outlets_rows:
             o_id, o_name, o_loc = outlet
 
-            if o_name.lower() in EXCLUDED_OUTLETS:
-                continue
 
             # Determine defaults based on building
             build_meta = BUILDING_METADATA.get(o_loc, {
@@ -151,6 +147,8 @@ def get_ui_stores():
             })
             
             # Specific overrides
+            # I just put STORE_METADATA = {} here in the loop for now temparorily since STORE_METADATA is not defined
+            STORE_METADATA = {}
             store_meta = STORE_METADATA.get(o_name.lower(), {})
             
             # Merge logic
