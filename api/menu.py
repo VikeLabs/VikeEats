@@ -10,6 +10,17 @@ from pypdf import PdfReader
 menu_blueprint = Blueprint('menu', __name__)
 PDF_DETAILS_CACHE = {}
 
+# French / bilingual PDF section headers (tolerant of mojibake between R and D).
+_PDF_FR_INGREDIENTS_HEADER = re.compile(
+    r'\s+INGR.{0,8}DIENTS\s*:|\s+Ingr[ée]dients\s*:|\s+LISTE\s+D[\'\u2019]?INGR[ÉE]DIENTS\s*:',
+    re.IGNORECASE,
+)
+_PDF_ALLERGEN_BLEED = (
+    re.compile(r'\s+\d{2}/\d{2}/\d{4}\b'),
+    re.compile(r'\bwww\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b'),
+    re.compile(r'\b\d{3}-\d{3}-\d{4}\b'),
+)
+
 # Manual fallback skeleton: fill these values directly when source data is missing/noisy.
 # Key format:
 #   { "<tab-id>": { "<item name>": {"ingredients": "...", "allergens": "..."} } }
@@ -154,11 +165,13 @@ def parse_heading_blocks(container, base_url, location):
         if not block:
             continue
 
-        nested = first_child_container_with_headers(block)
+        nested = find_nested_menu_container(block)
         if nested:
             nested_result = parse_heading_blocks(nested, base_url, location)
             if nested_result:
                 result[name] = nested_result
+                continue
+            if nested_menu_has_titled_headers(nested):
                 continue
 
         details = parse_item_details(block, base_url)
@@ -178,6 +191,19 @@ def next_div_sibling(tag):
     return None
 
 
+def h3_has_menu_title(h3):
+    if not h3:
+        return False
+    text = h3.get_text(strip=True).replace('\u00a0', ' ')
+    if len(text) >= 3:
+        return True
+    return False
+
+
+def nested_menu_has_titled_headers(container):
+    return any(h3_has_menu_title(h) for h in container.find_all('h3'))
+
+
 def first_child_container_with_headers(container):
     candidate = container
     for _ in range(4):
@@ -189,6 +215,73 @@ def first_child_container_with_headers(container):
             return None
         candidate = child_divs[0]
     return None
+
+
+def find_nested_menu_container(block):
+    """
+    Locate inner accordion / submenu container. Handles:
+    - Single chain of wrapper divs (original behaviour).
+    - Multiple direct child divs (intro column + accordions).
+    - Blocks where the only direct h3 rows are icon-only: treat as no nested menu
+      so the section is parsed as one item (ingredients on siblings).
+    """
+    nested = first_child_container_with_headers(block)
+    if nested is not None and nested is block:
+        direct_h3 = block.find_all('h3', recursive=False)
+        if direct_h3 and not any(h3_has_menu_title(h) for h in direct_h3):
+            nested = None
+    if nested is not None:
+        return nested
+
+    best = None
+    best_count = -1
+    for div in block.find_all('div', recursive=False):
+        titled = sum(
+            1 for h in div.find_all('h3', recursive=False) if h3_has_menu_title(h)
+        )
+        if titled > best_count:
+            best = div
+            best_count = titled
+    if best is not None and best_count >= 1:
+        return best
+    return None
+
+
+def refine_pdf_ingredient_text(raw):
+    """Keep English ingredients; drop French duplicate block and trailing junk."""
+    if not raw:
+        return ''
+    text = raw.strip()
+    m = _PDF_FR_INGREDIENTS_HEADER.search(text)
+    if m:
+        text = text[: m.start()]
+    return text.strip(' .;,')
+
+
+def refine_pdf_allergen_text(raw):
+    """English allergens only; trim French 'Contient' and product / URL bleed."""
+    if not raw:
+        return ''
+    text = raw.strip()
+    m = re.search(r'\s+Contient\s*:', text, re.IGNORECASE)
+    if m:
+        text = text[: m.start()]
+    m = re.search(r'\s+Peut\s+contenir\s*:', text, re.IGNORECASE)
+    if m:
+        text = text[: m.start()]
+    cut = len(text)
+    for pat in _PDF_ALLERGEN_BLEED:
+        m2 = pat.search(text)
+        if m2 is not None:
+            cut = min(cut, m2.start())
+    text = text[:cut].strip(' .;,')
+    # Product title merged after disclaimer when date/phone were stripped first.
+    text = re.sub(
+        r'\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,5}\s*$',
+        '.',
+        text,
+    )
+    return text.strip(' .;,')
 
 
 def parse_item_details(item_div, base_url):
@@ -306,9 +399,9 @@ def extract_pdf_ingredients_allergens(pdf_url):
         )
 
         if ingredients_match:
-            ingredients = ingredients_match.group(1).strip(" .;")
+            ingredients = refine_pdf_ingredient_text(ingredients_match.group(1))
         if allergens_match:
-            allergens = allergens_match.group(1).strip(" .;")
+            allergens = refine_pdf_allergen_text(allergens_match.group(1))
 
         products = extract_products_from_pdf_text(pdf_text)
     except Exception:
@@ -372,9 +465,9 @@ def extract_segment_ingredients_allergens(segment_text):
     )
 
     if ingredients_match:
-        ingredients = ingredients_match.group(1).strip(" .;")
+        ingredients = refine_pdf_ingredient_text(ingredients_match.group(1))
     if allergens_match:
-        allergens = allergens_match.group(1).strip(" .;")
+        allergens = refine_pdf_allergen_text(allergens_match.group(1))
     return ingredients, allergens
 
 

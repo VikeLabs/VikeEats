@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, MetaData, select, update
+from sqlalchemy import create_engine, MetaData, select, update, delete
 from . import sub_hours
 from .food_outlets import get_food_outlets_dict
 from .menu import mystic_cove_menu_dict, others_menus_dict
@@ -495,10 +495,20 @@ def db_um():
 
                     try:
                         scraped_data = mystic_cove_menu_dict(mapping["url"], tab_id)
-                        
-                        first_value = next(iter(scraped_data.values()), None)
-                        is_flat_items = isinstance(first_value, dict) and (
-                            "dietary restrictions" in first_value
+                        if not scraped_data:
+                            continue
+
+                        clear_menu_categories_and_items(
+                            conn,
+                            menu_id,
+                            menu_categories,
+                            menu_items,
+                            menu_item_restrictions,
+                        )
+
+                        # Flat: every top-level value is one dish. Nested: values are category dicts.
+                        is_flat_items = all(
+                            is_item_details(v) for v in scraped_data.values()
                         )
 
                         if is_flat_items:
@@ -543,6 +553,32 @@ def is_item_details(details):
     }.issubset(details.keys())
 
 
+def clear_menu_categories_and_items(conn, menu_id, menu_categories, menu_items, menu_item_restrictions):
+    """Remove all categories and items for a menu so rescrape does not leave stale rows."""
+    cat_ids = [
+        r[0]
+        for r in conn.execute(
+            select(menu_categories.c.id).where(menu_categories.c.menu_id == menu_id)
+        ).fetchall()
+    ]
+    if not cat_ids:
+        return
+    item_ids = [
+        r[0]
+        for r in conn.execute(
+            select(menu_items.c.id).where(menu_items.c.category_id.in_(cat_ids))
+        ).fetchall()
+    ]
+    if item_ids:
+        conn.execute(
+            delete(menu_item_restrictions).where(
+                menu_item_restrictions.c.menu_item_id.in_(item_ids)
+            )
+        )
+        conn.execute(delete(menu_items).where(menu_items.c.id.in_(item_ids)))
+    conn.execute(delete(menu_categories).where(menu_categories.c.menu_id == menu_id))
+
+
 def iter_leaf_menu_items(menu_dict):
     """
     Yield only lowest-level menu items from nested menu dictionaries.
@@ -568,8 +604,8 @@ def get_or_create_category(conn, table, menu_id, name):
     return cat_id
 
 def process_menu_item(conn, menu_items_table, restrictions_table, junction_table, cat_id, item_name, details):
-    new_ingredients = details.get("ingredients", "")
-    new_allergens = details.get("allergens", "")
+    new_ingredients = details.get("ingredients") or ""
+    new_allergens = details.get("allergens") or ""
 
     item_id = conn.execute(
         select(menu_items_table.c.id).where(
@@ -599,9 +635,9 @@ def process_menu_item(conn, menu_items_table, restrictions_table, junction_table
             updates = {}
             old_ingredients = existing_row[0] or ""
             old_allergens = existing_row[1] or ""
-            if new_ingredients and new_ingredients != old_ingredients:
+            if new_ingredients != old_ingredients:
                 updates["ingredients"] = new_ingredients
-            if new_allergens and new_allergens != old_allergens:
+            if new_allergens != old_allergens:
                 updates["allergens"] = new_allergens
             if updates:
                 conn.execute(
