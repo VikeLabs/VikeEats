@@ -29,7 +29,7 @@ const App = () => {
       <MarkerLayer stores={storesData} selectedOutletId={selectedOutletId} />
       <UserLocationMarker />
       <FilterButtons />
-      <NavBar />
+      <NavBar stores={storesData} />
       <CardsContainer
         stores={storesData}
         selectedStore={selectedStore}
