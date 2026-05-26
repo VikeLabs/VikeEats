@@ -185,6 +185,15 @@
   @apply font-semibold text-primary-dark/70;
 }
 
+.item-dietary {
+  @apply mt-1.5 text-xs leading-relaxed;
+  color: rgba(0, 39, 84, 0.55);
+}
+
+.item-dietary-label {
+  @apply font-semibold text-primary-dark/70;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

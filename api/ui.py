@@ -11,15 +11,18 @@ DB_URL = f"sqlite:///{DB_PATH}"
 ui_blueprint = Blueprint('ui', __name__)
 
 
-def build_menu_sections_from_rows(rows):
+def build_menu_sections_from_rows(rows, item_diets=None):
     """
-    Rows: (menu_name, category_name, item_name, ingredients, allergens)
+    Rows: (menu_name, category_name, item_name, ingredients, allergens, item_id)
     Returns { "sections": [ { "title", "categories": [ { "name", "items" } ] } ] }
     """
+    if item_diets is None:
+        item_diets = {}
     tree = OrderedDict()
     for r in rows:
         menu_name, category_name, item_name = r[0], r[1], r[2]
         ingredients, allergens = (r[3] or "").strip(), (r[4] or "").strip()
+        item_id = r[5] if len(r) > 5 else None
         if menu_name not in tree:
             tree[menu_name] = OrderedDict()
         if category_name not in tree[menu_name]:
@@ -29,6 +32,8 @@ def build_menu_sections_from_rows(rows):
             entry["description"] = ingredients
         if allergens:
             entry["allergens"] = allergens
+        if item_id and item_id in item_diets:
+            entry["dietaryRestrictions"] = item_diets[item_id]
         tree[menu_name][category_name].append(entry)
 
     sections = []
@@ -179,7 +184,7 @@ def get_ui_stores():
             
             menu_stmt = text("""
                 SELECT m.name AS menu_name, mc.name AS category_name, mi.name AS item_name,
-                       mi.ingredients, mi.allergens
+                       mi.ingredients, mi.allergens, mi.id AS item_id
                 FROM menu_items mi
                 JOIN menu_categories mc ON mi.category_id = mc.id
                 JOIN menus m ON mc.menu_id = m.id
@@ -187,7 +192,24 @@ def get_ui_stores():
                 ORDER BY m.name, mc.name, mi.name
             """)
             menu_rows = conn.execute(menu_stmt, {"oid": o_id}).fetchall()
-            menu_payload = build_menu_sections_from_rows(menu_rows)
+
+            known_diets = {"vegan", "vegetarian", "gluten free", "dairy free", "halal"}
+            item_diets = {}
+            for r in menu_rows:
+                item_id = r[5]
+                diet_query = text("""
+                    SELECT dr.name FROM dietary_restrictions dr
+                    JOIN menu_item_restrictions mir ON dr.id = mir.restriction_id
+                    WHERE mir.menu_item_id = :iid
+                """)
+                diets_for_item = [
+                    d[0] for d in conn.execute(diet_query, {"iid": item_id}).fetchall()
+                    if d[0].lower() in known_diets
+                ]
+                if diets_for_item:
+                    item_diets[item_id] = diets_for_item
+
+            menu_payload = build_menu_sections_from_rows(menu_rows, item_diets)
 
             stores.append({
                 "id": o_id,

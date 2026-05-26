@@ -46,6 +46,11 @@ function MenuItemRow({ item }) {
           <span className="item-allergens-label">Contains:</span> {item.allergens}
         </p>
       ) : null}
+      {item.dietaryRestrictions && item.dietaryRestrictions.length > 0 ? (
+        <p className="item-dietary">
+          <span className="item-dietary-label">Dietary Restrictions:</span> {item.dietaryRestrictions.join(", ")}
+        </p>
+      ) : null}
     </li>
   );
 }
