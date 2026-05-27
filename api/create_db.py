@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Boolean, VARCHAR, TEXT, ForeignKey
+import os
 
 def create_database():
-    engine = create_engine("sqlite:///vikeeats.db", echo=True)
+    from .db import DB_URL
+    engine = create_engine(DB_URL, echo=True)
     metadata_obj = MetaData()
 
     # Food outlets table

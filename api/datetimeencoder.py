@@ -1,9 +1,11 @@
 import json
-from datetime import datetime, time
+from datetime import datetime, date
 
 class DateTimeEncoder(json.JSONEncoder):
-    """Custom JSON encoder for handling datetime and time objects"""
+    """
+    Custom JSON encoder to handle datetime objects.
+    """
     def default(self, obj):
-        if isinstance(obj, (datetime, time)):
-            return obj.strftime("%I:%M %p")  # Returns format like "11:30 AM"
-        return super().default(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super(DateTimeEncoder, self).default(obj)

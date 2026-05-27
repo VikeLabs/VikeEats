@@ -12,6 +12,7 @@
 
 import React from 'react';
 import './Navbar.css';
+import SearchBar from './SearchBar.js';
 import Link from 'next/link'
 
 /**
@@ -22,13 +23,14 @@ import Link from 'next/link'
  * @component
  * @returns {JSX.Element} The navigation bar.
  */
-function Navbar() {
+function Navbar({ stores }) {
     return (
         <nav className="navbar">
             <div className="logo">
                 <span className="bold">Vike</span>
                 <span>Eats</span>
             </div>
+            <SearchBar stores={stores} />
             <div className="nav-links">
                 <ul>
                     <li><a href="#">Food Establishments</a></li>

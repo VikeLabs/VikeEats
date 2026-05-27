@@ -20,8 +20,31 @@ def get_sub_menu():
     json_output = json.dumps(sub_hours, ensure_ascii=False, indent=4)
     return Response(json_output, mimetype='application/json')
 
+def hours_to_datetime(time_range:str):
+    # Handle the "Closed" case
+    if time_range.strip().lower() == "closed":
+        return None, None
+    
+    # Normalize the delimiter by replacing variations with a standard one
+    time_range = time_range.replace('–', '-').replace(' ', '')
+    
+    # Split the input string into start and end time strings
+    start_str, end_str = time_range.split('-')
+    
+    # Define the format for parsing the time strings
+    time_format = "%I:%M%p"
+    
+    # Parse the start and end times into datetime objects
+    start = datetime.strptime(start_str, time_format)
+    end = datetime.strptime(end_str, time_format)
+    
+    return start, end
+
 def get_sub_hours():
-    r = requests.get("https://uvss.ca/thesub/")
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+    }
+    r = requests.get("https://uvss.ca/thesub/", headers=headers)
     if r.status_code != 200:
         return jsonify({"error": "Failed to retrieve page"}), 500
 
@@ -59,26 +82,6 @@ def get_sub_hours():
                                                     "end":f"{end_time.strftime('%I:%M %p')}"}],
                                         "displayHours":f"{start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')}"}
     
-    def hours_to_datetime(time_range:str):
-        # Handle the "Closed" case
-        if time_range.strip().lower() == "closed":
-            return None, None
-        
-        # Normalize the delimiter by replacing variations with a standard one
-        time_range = time_range.replace('–', '-').replace(' ', '')
-        
-        # Split the input string into start and end time strings
-        start_str, end_str = time_range.split('-')
-        
-        # Define the format for parsing the time strings
-        time_format = "%I:%M%p"
-        
-        # Parse the start and end times into datetime objects
-        start = datetime.strptime(start_str, time_format)
-        end = datetime.strptime(end_str, time_format)
-        
-        return start, end
-
     for d in [bean_there_info, fels_info, the_grill_info, munchie_bar_info, health_food_bar_info]:
         for key, value in d.items():
             name = list(value.keys())[0]
@@ -125,10 +128,13 @@ def bean_there(soup):
     
     # Use next_sibling, because hours are not stored in an easily grabbable tag
     hours = days_tag.next_sibling
-    if not hours or not hours.strip():
+    if not hours or (hasattr(hours, 'strip') and not hours.strip()):
         print("Hours not found.")
         return bean_there_dict
-    hours = hours.strip()
+    
+    if hasattr(hours, 'strip'):
+        hours = hours.strip()
+        
     days_add_weekend = [days,"Saturday & Sunday"]
     # Add the name and hours to the dictionary
     bean_there_dict[days_add_weekend[0]] = {name: hours}
@@ -170,7 +176,7 @@ def fels(soup):
 
         # Use next_sibling, because hours are not stored in an easily grabbable tag
         hour_text = day.next_sibling
-        if hour_text and hour_text.strip():  # Check if the next sibling exists and has non-whitespace text
+        if hour_text and hasattr(hour_text, 'strip') and hour_text.strip():  # Check if the next sibling exists and has non-whitespace text
             hours.append(hour_text.strip())
         else:
             hours.append(None)
@@ -212,10 +218,12 @@ def the_grill(soup):
     
     # Use next_sibling, because hours are not stored in an easily grabbable tag
     hours = days_tag.next_sibling
-    if not hours or not hours.strip():
+    if not hours or (hasattr(hours, 'strip') and not hours.strip()):
         print("Hours not found.")
         return the_grill_dict
-    hours = hours.strip()
+        
+    if hasattr(hours, 'strip'):
+        hours = hours.strip()
     
     days_add_weekend = [days,"Saturday & Sunday"]
     # Add the name and hours to the dictionary
@@ -260,15 +268,22 @@ def munchie_bar(soup):
         split across 2 strong tags, so in order to save all of the
         hours, it needs to skip the 'friday:'
         '''
-        if day.next_sibling.name != 'strong':
+        if getattr(day.next_sibling, 'name', None) != 'strong':
             hour_text = day.next_sibling
         else:
             hour_text = day.next_sibling.next_sibling
-        if hour_text and hour_text.strip():  # Check if the next sibling exists and has non-whitespace text
-            hours.append(hour_text.strip())
+
+        if hour_text and hasattr(hour_text, 'get_text'):
+            txt = hour_text.get_text(strip=True)
+        elif hour_text and isinstance(hour_text, str):
+            txt = hour_text.strip()
         else:
-            hours.append(None)
-    
+            txt = None
+
+        if txt:
+            hours.append(txt)
+        else:
+            hours.append(None)            
     # fixing werid html
     '''
     for some reason they have "monday -" and "friday:"
@@ -315,11 +330,13 @@ def health_food_bar(soup):
     days = days_tag.get_text(strip=True)
     
     hours = days_tag.next_sibling
-    if not hours or not hours.strip():
+    if not hours or (hasattr(hours, 'strip') and not hours.strip()):
         print("Hours not found.")
         return hfb_dict
-    hours = hours.strip()
-    
+        
+    if hasattr(hours, 'strip'):
+        hours = hours.strip()
+        
     days_add_weekend = [days,"Saturday & Sunday"]
     # Add the name and hours to the dictionary
     hfb_dict[days_add_weekend[0]] = {name: hours}

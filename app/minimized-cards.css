@@ -7,7 +7,11 @@
 }
 
 .store_image {
-  @apply flex-shrink-0 h-36 ml-auto rounded-r-md object-cover mb-0;
+  @apply flex-shrink-0 h-36 w-48 ml-auto rounded-r-md object-cover mb-0 bg-gray-500;
+}
+
+.store_image_logo {
+  @apply w-60;
 }
 
 .store_card:hover {

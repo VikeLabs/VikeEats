@@ -3,17 +3,11 @@
 # import requests
 
 
-import re
-from collections import OrderedDict
-
-
-from flask import Flask, jsonify, current_app, request, Response
+from flask import Flask, jsonify
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, date, time, timedelta
 from flask import Blueprint
-import copy
-import logging
 # from flask_cors import CORS
 import json
 from .datetimeencoder import DateTimeEncoder
@@ -37,21 +31,26 @@ def return_food_outlets():
 
 def get_food_outlets():
     try:
-        r = requests.get("https://www.uvic.ca/services/food/where/index.php")
-        if r.status_code != 200:
-            return jsonify({"error": "Failed to retrieve page"}), 500
+        food_outlets = get_food_outlets_dict()
+        return jsonify(food_outlets)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-        soup = BeautifulSoup(r.content, 'html.parser')
-        food_outlets = parse(soup)
-        is_date = determine_date(food_outlets, datetime.now())
-        print("\n\n",is_date, " \n\n")
-        formatted_outlets = format_outlet_hours(food_outlets)
-        # Use manual JSON encoding with custom encoder
-        
-        return formatted_outlets
+def get_food_outlets_dict():
+    r = requests.get("https://www.uvic.ca/services/food/where/index.php")
+    if r.status_code != 200:
+        raise Exception("Failed to retrieve page")
 
-        #json_str = json.dumps(formatted_outlets, cls=DateTimeEncoder)
-        #return current_app.response_class(response=json_str,status=200,mimetype='application/json')
+    soup = BeautifulSoup(r.content, 'html.parser')
+    food_outlets = parse(soup)
+    return food_outlets
+
+def clean_text(tag):
+    #NEXT TO DO Made header in <strong> tag and it time a header for the sub outlets in the another json section
+    text_list = (tag.stripped_strings)
+    return text_list
+
+def parse(soup):
 
 
     except Exception as e:
@@ -226,10 +225,8 @@ def parse(soup):
     # Find all accordion sections
     accordions = soup.find_all('div', class_='accordions')
     
-    for accordion in accordions:
-        # Get all h3 headers (these are the main time periods like "Monday - Thursday")
-        headers = accordion.find_all('h3')
-        
+    for section in sections:
+        headers = section.find_all('h3')
         for header in headers:
             # Get the header text (e.g., "Monday - Thursday")
             header_name = header.get_text(strip=True)
@@ -238,51 +235,39 @@ def parse(soup):
                 
             # Initialize dictionary for this time period
             food_outlets[header_name] = {}
-            
-            # Find the div that follows this header (contains the table)
-            content_div = header.find_next_sibling('div')
-            if not content_div:
-                continue
-                
-            # Find all tables in this div
-            tables = content_div.find_all('table')
-            
+            tables = section.find_all('table')
             for table in tables:
                 rows = table.find_all('tr')
                 
                 for row in rows:
                     cols = row.find_all('td')
-                    if len(cols) == 2:  # gets two columns: outlet name and hours
-                        # get all text from both columns, preserving line breaks
-                        outlet_names = [text.strip() for text in cols[0].stripped_strings]
-                        hours = [text.strip() for text in cols[1].stripped_strings]
+                    if len(cols) == 2:
+                        outlet_names = clean_text(cols[0])
+                        hours_texts = clean_text(cols[1])
                         
-                        # remove empty strings and special characters
-                        outlet_names = [name for name in outlet_names if name and name != '\xa0']
-                        hours = [hour for hour in hours if hour and hour != '\xa0']
-                        
-                        # Pair each outlet with its corresponding hours
-                        for outlet_name, hour in zip(outlet_names, hours):
-                            # Skip if the outlet name is actually a header (starts with *)
-                            if outlet_name.startswith('*'):
-                                continue
-                                
-                            # Clean the outlet name and hours
-                            clean_outlet = outlet_name.replace('\u00a0', ' ').strip()
-                            clean_hours = hour.replace('\u00a0', ' ').strip()
+                        for name, hours_text in zip(outlet_names, hours_texts):
+                            is_closed = "closed" in hours_text.lower()
+                            raw_hours = []
+                            if not is_closed:
+                                try:
+                                    # Simple parsing for now, could be improved
+                                    parts = hours_text.split('-')
+                                    if len(parts) == 2:
+                                        # This is a very basic placeholder for rawHours parsing
+                                        # since turn_to_datetime seems broken/incomplete
+                                        raw_hours = [{"start": parts[0].strip(), "end": parts[1].strip()}]
+                                except:
+                                    pass
                             
-                            # Add to our dictionary
-                            if clean_outlet:  # Only add if we have a valid outlet name
-                                food_outlets[header_name][clean_outlet] = clean_hours
-    #process hours into date time objects
-    time_ranges = copy.deepcopy(food_outlets)
-    for day_range in food_outlets:
-        for outlet, time_range in food_outlets[day_range].items():
-            # print(f"Raw time range for {outlet}: {time_range}")  # Add this line
-            time_ranges[day_range][outlet] = turn_to_datetime(time_range)
-    # return food_outlets
-    return time_ranges
+                            food_outlets[header_name][name] = {
+                                "isClosed": is_closed,
+                                "displayHours": hours_text,
+                                "rawHours": raw_hours
+                            }
 
+    return food_outlets
+
+#currently doesnt work quite right
 def turn_to_datetime(time_range):
     """
     Convert time range strings to datetime.time objects.
@@ -370,12 +355,19 @@ def is_within_date_range(current_date, food_outlets):
     
     return open_outlets
 
-def determine_date(food_outlets, date=None):
-
-    if date == None:
-        current_date = datetime.now()
-    else:
-        current_date = date
+    for key in food_outlets:
+        if key == day_of_week:
+            return {key: food_outlets[key]}
+        else:
+            try:
+                key_list = key.split(" - ")
+                lower_index = days.index(key_list[0])
+                higher_index = days.index(key_list[1])
+                today_index = days.index(day_of_week)
+                if today_index >= lower_index and today_index <= higher_index:
+                    return {key: food_outlets[key]}
+            except:
+                pass
 
     shortened_month = current_date.strftime('%b')
     day_of_week = current_date.strftime('%A')

@@ -1,14 +1,8 @@
 /**
  * UserLocationMarker.js
- * 
- * This component retrieves the user's current location using the browser's geolocation API
- * and displays a marker on the shared OpenLayers map instance.
  *
- * Features:
- * - Requests geolocation permissions from the user.
- * - Creates a new vector layer to render the user location marker.
- * - Uses an OpenLayers Icon style to display the marker.
- * - Animates the map view to center on the user's location.
+ * Retrieves the user's current location and draws a distinct “you are here” marker:
+ * soft accuracy disk + navy inner dot (not the same grammar as food outlet pins/labels).
  */
 
 import { useEffect } from "react";
@@ -18,59 +12,71 @@ import Point from "ol/geom/Point";
 import { fromLonLat } from "ol/proj";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { Style, Circle, Fill } from "ol/style";
+import { Style, Circle, Fill, Stroke } from "ol/style";
+
+/** tailwind: secondary #005493, accent-blue #57B7E7 */
+const USER = {
+  accuracyFill: "rgba(87, 183, 231, 0.2)",
+  accuracyStroke: "rgba(0, 84, 147, 0.35)",
+  dotFill: "#005493",
+  dotRing: "#ffffff",
+};
+
+function createUserLocationStyle() {
+  return [
+    new Style({
+      image: new Circle({
+        radius: 24,
+        fill: new Fill({ color: USER.accuracyFill }),
+        stroke: new Stroke({ color: USER.accuracyStroke, width: 1.5 }),
+      }),
+    }),
+    new Style({
+      image: new Circle({
+        radius: 8,
+        fill: new Fill({ color: USER.dotFill }),
+        stroke: new Stroke({ color: USER.dotRing, width: 2.5 }),
+      }),
+    }),
+  ];
+}
 
 /**
- * UserLocationMarker Component
- * 
- * Retrieves the user's geolocation and adds a marker to the map.
- *
- * @component
- * @returns {null} This component does not render any visible DOM elements.
+ * @returns {null}
  */
 const UserLocationMarker = () => {
   useEffect(() => {
     const map = getMapInstance();
     let vectorLayer = null;
+    let cancelled = false;
 
     if (!navigator.geolocation) {
       console.error("Geolocation is not supported by this browser.");
-      return;
+      return undefined;
     }
 
-    // Request the user's geolocation with high accuracy enabled.
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (cancelled || !map) return;
+
         const { latitude, longitude } = position.coords;
         const coordinates = fromLonLat([longitude, latitude]);
 
-        // Create a feature for the user location marker
         const userFeature = new Feature({
           geometry: new Point(coordinates),
         });
+        userFeature.setStyle(createUserLocationStyle());
 
-        // Set the style for the marker (update the icon path as needed)
-        userFeature.setStyle(
-          new Style({
-            image: new Circle({
-                radius: 8,
-                fill: new Fill({ color: "black" }),
-              }),
-          })
-        );
-
-        // Create a vector source and layer for the marker
         const vectorSource = new VectorSource({
           features: [userFeature],
         });
         vectorLayer = new VectorLayer({
           source: vectorSource,
+          zIndex: 200,
         });
 
-        // Add the vector layer (with the user marker) to the map
         map.addLayer(vectorLayer);
 
-        // Animate the map view to center on the user’s location
         map.getView().animate({
           center: coordinates,
           duration: 1000,
@@ -82,15 +88,14 @@ const UserLocationMarker = () => {
       { enableHighAccuracy: true }
     );
 
-    // Cleanup: remove the vector layer when this component unmounts
     return () => {
-      if (vectorLayer) {
+      cancelled = true;
+      if (vectorLayer && map) {
         map.removeLayer(vectorLayer);
       }
     };
   }, []);
 
-  // This component does not render any DOM elements.
   return null;
 };
 

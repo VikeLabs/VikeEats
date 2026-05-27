@@ -139,4 +139,5 @@ export const stores = [
     image:
       "https://www.uvic.ca/services/food/assets/images/photos/artsplace.jpg",
   },
+  
 ];

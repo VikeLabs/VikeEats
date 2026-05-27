@@ -25,4 +25,5 @@ export const markerData = [
   { id: 5, categories: ["all", "filter4"], coords: [-123.31051, 48.46117] }, // Nibbles and Bytes
   { id: 6, categories: ["all", "filter5"], coords: [-123.30892, 48.46203] }, // Sci Cafe
   { id: 7, categories: ["all", "filter1", "filter3", "filter5"], coords: [-123.31668, 48.46196] }, // Arts Place
+  
 ];
