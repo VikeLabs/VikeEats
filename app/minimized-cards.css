@@ -3,7 +3,7 @@
 }
 
 .store_card {
-  @apply flex items-center py-4 border-8 cursor-pointer bg-white mb-2 shadow-dark rounded-md pl-4 pb-0 pt-0 pr-0;
+  @apply flex items-center py-4 cursor-pointer bg-white mb-2 shadow-dark rounded-md pl-4 pb-0 pt-0 pr-0;
 }
 
 .store_image {

@@ -235,4 +235,5 @@ const MarkerLayer = ({ stores, selectedOutletId = null }) => {
   return null;
 };
 
+// Make sure to export as DEFAULT
 export default MarkerLayer;

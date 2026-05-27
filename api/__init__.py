@@ -28,5 +28,6 @@ app.register_blueprint(ui_blueprint, url_prefix='/api')
 def index():
     return jsonify({"message": "Welcome to the Flask API"})
 
+
 if __name__ == "__main__":
     app.run(port=5328, debug=True)

@@ -98,6 +98,21 @@ def clear_db(conn, metadata):
         if table_name in metadata.tables:
             conn.execute(metadata.tables[table_name].delete())
     conn.commit()
+# Funtion to merge dictionaries
+def merge_dicts(dict1, dict2):
+    """
+    Recursively merge two dictionaries.
+    If a key exists in both dictionaries and the values are dictionaries, merge them recursively.
+    Otherwise, keep the value from dict2 (overwrite dict1).
+    """
+    for key, value in dict2.items():
+        if key in dict1 and isinstance(dict1[key], dict) and isinstance(value, dict):
+            # If both values are dictionaries, merge them recursively
+            merge_dicts(dict1[key], value)
+        else:
+            # Otherwise, overwrite dict1's value with dict2's value
+            dict1[key] = value
+    return dict1
 
 # Function to Normlize outlets names
 def normalize_name(name):
