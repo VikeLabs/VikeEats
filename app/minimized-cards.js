@@ -100,75 +100,12 @@ const MinimizedCards = ({ stores = [], onCardClick }) => {
     }
   };
 
-  // Refs to track zoom state and initial zoom level
-  const hasZoomedRef = useRef(false);
-  const initialZoomRef = useRef(null);
-
   // Filter cards based on selected categories
   const filteredCards = selectedCategories.includes("all")
     ? stores
     : stores.filter((card) =>
         card.categories && card.categories.some((cat) => selectedCategories.includes(cat))
       );
-
-  useEffect(() => {
-    const map = getMapInstance();
-    if (!map) return;
-
-    // Detect double-click to reset zoom state
-    const handleDoubleClick = () => {
-      hasZoomedRef.current = false;
-      initialZoomRef.current = null;
-    };
-
-    map.getViewport().addEventListener('dblclick', handleDoubleClick);
-
-    // Cleanup
-    return () => {
-      map.getViewport().removeEventListener('dblclick', handleDoubleClick);
-    };
-  }, []);
-
-  /**
-   * Handles card click event to update map view
-   * 
-   * @param {Object} store - The selected store/card data
-   */
-  const handleCardClick = (store) => {
-    const map = getMapInstance();
-    if (!map) return;
-
-    // Find the corresponding marker for the selected store
-    const matchingMarker = markerData.find(marker => marker.id === store.id);
-
-    if (matchingMarker) {
-      const currentZoom = map.getView().getZoom();
-      
-      // First-time zoom behavior
-      if (!hasZoomedRef.current) {
-        // Store the initial zoom level
-        initialZoomRef.current = currentZoom;
-        
-        // Calculate target zoom: 3 levels closer, max 18
-        const targetZoom = Math.min(initialZoomRef.current + 3, 18);
-        
-        // Animate center and zoom in one smooth motion
-        map.getView().animate({
-          center: fromLonLat(matchingMarker.coords),
-          zoom: targetZoom,
-          duration: 1000
-        });
-
-        hasZoomedRef.current = true;
-      } else {
-        // Subsequent clicks: just center the map
-        map.getView().animate({
-          center: fromLonLat(matchingMarker.coords),
-          duration: 600
-        });
-      }
-    }
-  };
 
   return (
     <div className="MinimizedCards">

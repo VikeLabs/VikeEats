@@ -50,14 +50,6 @@ def clean_text(tag):
     text_list = (tag.stripped_strings)
     return text_list
 
-def parse(soup):
-
-
-    except Exception as e:
-        logging.error(f"Error in get_food_outlets: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
 @food_outlets_blueprint.route('/food_outlets_with_buildings')
 def add_names_of_food_outlets():
     response = get_food_outlets()

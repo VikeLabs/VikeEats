@@ -16,6 +16,7 @@ import { Map, View } from "ol";
 import TileLayer from "ol/layer/Tile";
 import XYZ from "ol/source/XYZ";
 import { fromLonLat } from "ol/proj";
+import { defaults as defaultInteractions } from "ol/interaction";
 import { UVIC_COORDINATES, MAP_ZOOM_LEVEL } from "./config";
 
 /** @see https://github.com/CartoDB/basemap-styles */
@@ -70,7 +71,7 @@ export const getMapInstance = (target) => {
         center: fromLonLat(UVIC_COORDINATES),
         zoom: MAP_ZOOM_LEVEL,
       }),
-      interactions: interactions
+      interactions: defaultInteractions({ doubleClickZoom: false })
     });
     
     // Add custom double-click handler to zoom out
