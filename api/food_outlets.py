@@ -217,7 +217,7 @@ def parse(soup):
     # Find all accordion sections
     accordions = soup.find_all('div', class_='accordions')
     
-    for section in sections:
+    for section in accordions:
         headers = section.find_all('h3')
         for header in headers:
             # Get the header text (e.g., "Monday - Thursday")

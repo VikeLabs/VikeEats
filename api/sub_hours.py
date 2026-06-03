@@ -25,7 +25,8 @@ def hours_to_datetime(time_range:str):
     if time_range.strip().lower() == "closed":
         return None, None
     
-    # Normalize the delimiter by replacing variations with a standard one
+    # Strip trailing asterisks and normalize the delimiter
+    time_range = time_range.replace('*', '')
     time_range = time_range.replace('–', '-').replace(' ', '')
     
     # Split the input string into start and end time strings
@@ -183,10 +184,10 @@ def fels(soup):
     
     
     # Add the name and hours to the dictionary
-    fels_hours[days[0]] = {name: hours[0]}
-    fels_hours[days[1]] = {name: hours[1]}
-    fels_hours[days[2]] = {name: hours[2]}
-    
+    for i in range(len(days)):
+        if i < len(hours) and hours[i]:
+            fels_hours[days[i]] = {name: hours[i]}
+
     return fels_hours
 
 def the_grill(soup):
