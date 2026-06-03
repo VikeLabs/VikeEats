@@ -232,7 +232,27 @@ def db_ufo():
         "booster juice": "Jamie Cassels Centre"
     }
 
-    # Inputing UVic food outlets into the DB
+    # Insert all known outlets from MENU_MAPPING so they're always present
+    with engine.connect() as conn:
+        for outlet_name, mapping in MENU_MAPPING.items():
+            norm_name = normalize_name(outlet_name)
+            existing_entry = conn.execute(
+                food_outlets.select().where(food_outlets.c.name == norm_name)
+            ).fetchone()
+            if not existing_entry:
+                location = building_mapping.get(norm_name, 'Unknown')
+                conn.execute(food_outlets.insert().values(name=norm_name, location=location))
+            for sub_name in mapping.get("sub_locations", {}):
+                norm_sub = normalize_name(sub_name)
+                existing_sub = conn.execute(
+                    food_outlets.select().where(food_outlets.c.name == norm_sub)
+                ).fetchone()
+                if not existing_sub:
+                    location = building_mapping.get(norm_sub, 'Unknown')
+                    conn.execute(food_outlets.insert().values(name=norm_sub, location=location))
+        conn.commit()
+
+    # Insert any additional UVic food outlets found by scraping
     uvic_hours_dict = get_food_outlets_dict()
     with engine.connect() as conn:
         for day_range in uvic_hours_dict:
@@ -326,6 +346,29 @@ def db_uoh():
                                                                         is_closed=uvic_hours_dict[day_range][name]['isClosed'],
                                                                         display_hours=uvic_hours_dict[day_range][name]['displayHours'])
                         conn.execute(db_insert)
+        conn.commit()
+
+    # Mark outlets with no scraped hours as closed for every day
+    all_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    with engine.connect() as conn:
+        all_outlet_ids = [
+            r[0] for r in conn.execute(select(food_outlets.c.id)).fetchall()
+        ]
+        for outlet_id in all_outlet_ids:
+            for day in all_days:
+                existing = conn.execute(
+                    operating_hours.select().where(
+                        (operating_hours.c.food_outlet_id == outlet_id) &
+                        (operating_hours.c.day == day)
+                    )
+                ).fetchone()
+                if not existing:
+                    conn.execute(operating_hours.insert().values(
+                        food_outlet_id=outlet_id,
+                        day=day,
+                        is_closed=True,
+                        display_hours="Closed"
+                    ))
         conn.commit()
 
     result = engine.connect().execute(operating_hours.select())
