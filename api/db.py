@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, MetaData, select, update, delete
-from . import sub_hours
+from . import sub
+from .sub import SUB_MENUS
 from .food_outlets import get_food_outlets_dict
 from .menu import mystic_cove_menu_dict, others_menus_dict
 from . import create_db
@@ -56,10 +57,10 @@ MENU_MAPPING = {
         "type": "other",
         "url": "https://www.uvic.ca/services/food/where/artsplace/index.php"
     },
-    "nibbles & bytes": {
-        "type": "other",
-        "url": "https://www.uvic.ca/services/food/where/nibblesbytes/index.php"
-    },
+    # "nibbles & bytes": {
+    #     "type": "other",
+    #     "url": "https://www.uvic.ca/services/food/where/nibblesbytes/index.php"
+    # },
     "sci cafe": {
         "type": "other",
         "url": "https://www.uvic.ca/services/food/where/scicafe/index.php"
@@ -67,6 +68,17 @@ MENU_MAPPING = {
     "mac's": {
         "type": "other",
         "url": "https://www.uvic.ca/services/food/where/macs/index.php"
+    },
+    "the sub": {
+        "type": "sub",
+        "url": "https://uvss.ca/thesub/",
+        "sub_locations": {
+            "Bean There Cafe": None,
+            "Felicita’s Campus Pub": None,
+            "The Grill": None,
+            "Munchie Bar": None,
+            "Health Food Bar (HFB)": None
+        }
     }
 }
 
@@ -180,22 +192,10 @@ def db_ufo():
 
     food_outlets = metadata_obj.tables["food_outlets"]
 
-    # Inputing sub food outlets into the DB
-    sub_hours_dict = sub_hours.get_sub_hours()
-    with engine.connect() as conn:
-        for day in sub_hours_dict:
-            for name in sub_hours_dict[day]:
-                norm_name = normalize_name(name)
-                existing_entry = conn.execute(
-                    food_outlets.select().where(food_outlets.c.name == norm_name)
-                ).fetchone()
-                if not existing_entry:
-                    db_insert = food_outlets.insert().values(name=norm_name, location=sub_hours_dict[day][name]['Building'])
-                    conn.execute(db_insert)
-        conn.commit()
-    
     # Mapping for UVic food outlets to buildings
     building_mapping = {
+        "the sub": "The Sub",
+        "sub": "The Sub",
         "cove": "Cove",
         "mystic market": "Jamie Cassels Centre",
         "mac's": "MacLaurin",
@@ -232,7 +232,7 @@ def db_ufo():
         "booster juice": "Jamie Cassels Centre"
     }
 
-    # Insert all known outlets from MENU_MAPPING so they're always present
+    # Insert parent outlets from MENU_MAPPING so they're always present
     with engine.connect() as conn:
         for outlet_name, mapping in MENU_MAPPING.items():
             norm_name = normalize_name(outlet_name)
@@ -242,14 +242,6 @@ def db_ufo():
             if not existing_entry:
                 location = building_mapping.get(norm_name, 'Unknown')
                 conn.execute(food_outlets.insert().values(name=norm_name, location=location))
-            for sub_name in mapping.get("sub_locations", {}):
-                norm_sub = normalize_name(sub_name)
-                existing_sub = conn.execute(
-                    food_outlets.select().where(food_outlets.c.name == norm_sub)
-                ).fetchone()
-                if not existing_sub:
-                    location = building_mapping.get(norm_sub, 'Unknown')
-                    conn.execute(food_outlets.insert().values(name=norm_sub, location=location))
         conn.commit()
 
     # Insert any additional UVic food outlets found by scraping
@@ -287,33 +279,47 @@ def db_uoh():
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
 
-    sub_hours_dict = sub_hours.get_sub_hours()
+    sub_hours_dict = sub.get_sub_hours()
     uvic_hours_dict = get_food_outlets_dict()
     food_outlets = metadata_obj.tables["food_outlets"]
     operating_hours = metadata_obj.tables["operating_hours"]
 
-    # Inputing sub operating hours into the DB
+    # Assign Sub outlet hours to "the sub" parent
     with engine.connect() as conn:
-        for day in sub_hours_dict:
-            for name in sub_hours_dict[day]:
-                food_outlet_id = conn.execute(
-                        select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(name))
-                    ).scalar()
-                
-                if not food_outlet_id: continue
+        sub_parent_id = conn.execute(
+            select(food_outlets.c.id).where(food_outlets.c.name == normalize_name("the sub"))
+        ).scalar()
+
+        if sub_parent_id:
+            for day in sub_hours_dict:
+                all_closed = all(
+                    sub_hours_dict[day][name]['isClosed']
+                    for name in sub_hours_dict[day]
+                )
+                if all_closed:
+                    display = "Closed"
+                else:
+                    open_hours = [
+                        sub_hours_dict[day][name]['displayHours']
+                        for name in sub_hours_dict[day]
+                        if not sub_hours_dict[day][name]['isClosed']
+                    ]
+                    display = open_hours[0] if open_hours else "Closed"
 
                 existing_entry = conn.execute(
                     operating_hours.select().where(
-                        (operating_hours.c.food_outlet_id == food_outlet_id) &
+                        (operating_hours.c.food_outlet_id == sub_parent_id) &
                         (operating_hours.c.day == day)
-                    )).fetchone()
-                
+                    )
+                ).fetchone()
+
                 if not existing_entry:
-                    db_insert = operating_hours.insert().values(food_outlet_id=food_outlet_id,
-                                                                    day=day,
-                                                                    is_closed=sub_hours_dict[day][name]['isClosed'],
-                                                                    display_hours=sub_hours_dict[day][name]['displayHours'])
-                    conn.execute(db_insert)
+                    conn.execute(operating_hours.insert().values(
+                        food_outlet_id=sub_parent_id,
+                        day=day,
+                        is_closed=all_closed,
+                        display_hours=display
+                    ))
         conn.commit()
 
     # Inputing uvic operating hours into the DB
@@ -392,7 +398,7 @@ def db_uts():
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
 
-    sub_hours_dict = sub_hours.get_sub_hours()
+    sub_hours_dict = sub.get_sub_hours()
     uvic_hours_dict = get_food_outlets_dict()
     food_outlets = metadata_obj.tables["food_outlets"]
     operating_hours = metadata_obj.tables["operating_hours"]
@@ -580,6 +586,32 @@ def db_um():
                                     process_scraped_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
                     except Exception as e:
                         print(f"Error scraping menu for {sub_name}: {e}")
+
+            elif mapping["type"] == "sub":
+                for sub_name in mapping["sub_locations"]:
+                    menu_id = conn.execute(
+                        select(menus.c.id).where(
+                            (menus.c.food_outlet_id == parent_id) & (menus.c.name == sub_name)
+                        )
+                    ).scalar()
+                    if not menu_id:
+                        conn.execute(menus.insert().values(food_outlet_id=parent_id, name=sub_name))
+                        menu_id = conn.execute(select(menus.c.id).where(
+                            (menus.c.food_outlet_id == parent_id) & (menus.c.name == sub_name)
+                        )).scalar()
+
+                    clear_menu_categories_and_items(conn, menu_id, menu_categories, menu_items, menu_item_restrictions)
+                    sub_menu_data = SUB_MENUS.get(sub_name, {})
+                    for cat_name, items in sub_menu_data.get("categories", {}).items():
+                        cat_id = get_or_create_category(conn, menu_categories, menu_id, cat_name)
+                        for item in items:
+                            details = {
+                                "dietary restrictions": item.get("dietary restrictions", []),
+                                "ingredients": item.get("ingredients", ""),
+                                "allergens": item.get("allergens", "")
+                            }
+                            process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions,
+                                              cat_id, item["name"], details)
 
             elif mapping["type"] == "other":
                 menu_id = conn.execute(

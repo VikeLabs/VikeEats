@@ -7,6 +7,69 @@ from datetime import datetime
 sub_hours_blueprint = Blueprint('sub_hours', __name__)
 app = Flask(__name__)
 
+SUB_MENUS = {
+    "Bean There Cafe": {
+        "categories": {
+            "Menu": [
+              {"name": "Brewed Coffee", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Espresso", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Latte", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Cappuccino", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Americano", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Mocha", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Hot Chocolate", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Iced Mocha", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Iced Latte", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Iced Americano", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Tea", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Steamed Milk", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Chai Latte", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "London Fog", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Matcha Latte", "allergens": "vegan, vegetarian, gluten-free"},
+              {"name": "Muffins", "allergens": "vegetarian, gluten-free"},
+              {"name": "Bagels"},
+              {"name": "Egg Muffins", "allergens": "vegetarian"},
+              {"name": "Pasteries"},
+              {"name": "Cookies", "allergens": "vegetarian"},
+              {"name": "Sandwiches", "allergens": "vegan, vegetarian"},
+              {"name": "Wraps", "allergens": "vegan, vegetarian"},
+              {"name": "Sushi", "allergens": "vegan, gluten-free"},
+          ]
+        }
+    },
+    "Felicita’s Campus Pub": {
+        "categories": {
+            "Burgers": [
+              {"name": "Classic Burger", "ingredients": "...", "allergens": "..."},
+          ],
+          "International": [
+              {"name": "...", "ingredients": "...", "allergens": "..."},
+          ],
+        }
+    },
+    "The Grill": {
+        "categories": {
+            "Menu": [
+                # {"name": "Grilled Cheese", "ingredients": "", "allergens": ""},
+            ]
+        }
+    },
+    "Munchie Bar": {
+        "categories": {
+            "Menu": [
+                # {"name": "Fries", "ingredients": "", "allergens": ""},
+            ]
+        }
+    },
+    "Health Food Bar (HFB)": {
+        "categories": {
+            "Menu": [
+                # {"name": "Smoothie", "ingredients": "", "allergens": ""},
+            ]
+        }
+    },
+}
+
 # @app.route('/')
 # def index():
 #     return "Hello World"

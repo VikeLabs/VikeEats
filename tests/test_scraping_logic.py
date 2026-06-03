@@ -2,7 +2,7 @@ import pytest
 from bs4 import BeautifulSoup
 from datetime import time, datetime
 from api.food_outlets import turn_to_datetime, parse as parse_food_outlets, determine_date
-from api.sub_hours import hours_to_datetime, get_sub_hours, bean_there, fels, the_grill, munchie_bar, health_food_bar
+from api.sub import hours_to_datetime, get_sub_hours, bean_there, fels, the_grill, munchie_bar, health_food_bar
 from api.menu import parse as parse_menu, parse_cove_alt
 import requests_mock
 
@@ -27,7 +27,7 @@ def test_turn_to_datetime():
     assert turn_to_datetime("11:00am-2:00pm") == [(time(11, 0), time(14, 0))]
 
 def test_hours_to_datetime_sub():
-    from api.sub_hours import hours_to_datetime
+    from api.sub import hours_to_datetime
     assert hours_to_datetime("7:30am-5:30pm") == (datetime(1900, 1, 1, 7, 30), datetime(1900, 1, 1, 17, 30))
     assert hours_to_datetime("Closed") == (None, None)
 

@@ -12,7 +12,7 @@
 }
 
 .modal-content {
-  @apply relative flex max-h-[min(90vh,880px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-gray-100 bg-white font-header-regular text-primary-dark shadow-dark;
+  @apply relative flex h-[min(90vh,880px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-gray-100 bg-white font-header-regular text-primary-dark shadow-dark;
 }
 
 .close-btn {
