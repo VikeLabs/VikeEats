@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, MetaData, select, update, delete
 from . import sub
-from .sub import SUB_MENUS
+from .sub import SUB_MENUS, scrape_felicitas_menu
 from .food_outlets import get_food_outlets_dict
 from .menu import mystic_cove_menu_dict, others_menus_dict
 from . import create_db
@@ -601,17 +601,43 @@ def db_um():
                         )).scalar()
 
                     clear_menu_categories_and_items(conn, menu_id, menu_categories, menu_items, menu_item_restrictions)
-                    sub_menu_data = SUB_MENUS.get(sub_name, {})
-                    for cat_name, items in sub_menu_data.get("categories", {}).items():
-                        cat_id = get_or_create_category(conn, menu_categories, menu_id, cat_name)
-                        for item in items:
-                            details = {
-                                "dietary restrictions": item.get("dietary restrictions", []),
-                                "ingredients": item.get("ingredients", ""),
-                                "allergens": item.get("allergens", "")
-                            }
-                            process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions,
-                                              cat_id, item["name"], details)
+                    if "felicita" in sub_name.lower():
+                        felicitas_data = scrape_felicitas_menu()
+                        for tab_name, tab_categories in felicitas_data.items():
+                            fel_menu_id = conn.execute(
+                                select(menus.c.id).where(
+                                    (menus.c.food_outlet_id == parent_id) & (menus.c.name == tab_name)
+                                )
+                            ).scalar()
+                            if not fel_menu_id:
+                                conn.execute(menus.insert().values(food_outlet_id=parent_id, name=tab_name))
+                                fel_menu_id = conn.execute(select(menus.c.id).where(
+                                    (menus.c.food_outlet_id == parent_id) & (menus.c.name == tab_name)
+                                )).scalar()
+                            else:
+                                clear_menu_categories_and_items(conn, fel_menu_id, menu_categories, menu_items, menu_item_restrictions)
+                            for cat_name, items in tab_categories.items():
+                                cat_id = get_or_create_category(conn, menu_categories, fel_menu_id, cat_name)
+                                for item in items:
+                                    details = {
+                                        "dietary restrictions": item.get("dietary restrictions", []),
+                                        "ingredients": item.get("ingredients", ""),
+                                        "allergens": item.get("allergens", "")
+                                    }
+                                    process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions,
+                                                      cat_id, item["name"], details)
+                    else:
+                        sub_menu_data = SUB_MENUS.get(sub_name, {})
+                        for cat_name, items in sub_menu_data.get("categories", {}).items():
+                            cat_id = get_or_create_category(conn, menu_categories, menu_id, cat_name)
+                            for item in items:
+                                details = {
+                                    "dietary restrictions": item.get("dietary restrictions", []),
+                                    "ingredients": item.get("ingredients", ""),
+                                    "allergens": item.get("allergens", "")
+                                }
+                                process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions,
+                                                  cat_id, item["name"], details)
 
             elif mapping["type"] == "other":
                 menu_id = conn.execute(

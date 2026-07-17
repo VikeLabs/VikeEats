@@ -112,6 +112,14 @@
   @apply flex flex-col gap-2;
 }
 
+.menu-subcategory-list {
+  @apply flex flex-col gap-2 border-t border-gray-100 bg-gray-50/50 px-3 py-3;
+}
+
+.menu-category--nested {
+  @apply border-gray-200;
+}
+
 .menu-category {
   @apply overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm;
 }

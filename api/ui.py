@@ -211,6 +211,23 @@ def get_ui_stores():
 
             menu_payload = build_menu_sections_from_rows(menu_rows, item_diets)
 
+            # ...
+            if o_loc == "The Sub":
+                sub_location_names = {n.lower() for n in [
+                    "Bean There Cafe", "Felicita’s Campus Pub",
+                    "The Grill", "Munchie Bar", "Health Food Bar (HFB)"
+                ]}
+                sections = menu_payload.get("sections", [])
+                fel_sections = [s for s in sections if s["title"].lower() not in sub_location_names]
+                if fel_sections:
+                    other_sections = [s for s in sections if s["title"].lower() in sub_location_names]
+                    fel_parent = {
+                        "title": "Felicita’s Campus Pub",
+                        "subsections": fel_sections,
+                    }
+                    other_sections.append(fel_parent)
+                    menu_payload = {"sections": other_sections}
+
             stores.append({
                 "id": o_id,
                 "name": o_name.title(),

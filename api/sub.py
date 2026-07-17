@@ -11,41 +11,34 @@ SUB_MENUS = {
     "Bean There Cafe": {
         "categories": {
             "Menu": [
-              {"name": "Brewed Coffee", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Espresso", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Latte", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Cappuccino", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Americano", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Mocha", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Hot Chocolate", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Iced Mocha", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Iced Latte", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Iced Americano", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Tea", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Steamed Milk", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Chai Latte", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "London Fog", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Matcha Latte", "allergens": "vegan, vegetarian, gluten-free"},
-              {"name": "Muffins", "allergens": "vegetarian, gluten-free"},
+              {"name": "Brewed Coffee", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Espresso", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Latte", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Cappuccino", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Americano", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Mocha", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Hot Chocolate", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Iced Mocha", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Iced Latte", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Iced Americano", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Tea", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Steamed Milk", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Chai Latte", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "London Fog", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Matcha Latte", "dietary restrictions": ["vegan", "vegetarian", "gluten free"]},
+              {"name": "Muffins", "dietary restrictions": ["vegetarian", "gluten free"]},
               {"name": "Bagels"},
-              {"name": "Egg Muffins", "allergens": "vegetarian"},
+              {"name": "Egg Muffins", "dietary restrictions": ["vegetarian"]},
               {"name": "Pasteries"},
-              {"name": "Cookies", "allergens": "vegetarian"},
-              {"name": "Sandwiches", "allergens": "vegan, vegetarian"},
-              {"name": "Wraps", "allergens": "vegan, vegetarian"},
-              {"name": "Sushi", "allergens": "vegan, gluten-free"},
+              {"name": "Cookies", "dietary restrictions": ["vegetarian"]},
+              {"name": "Sandwiches", "dietary restrictions": ["vegan", "vegetarian"]},
+              {"name": "Wraps", "dietary restrictions": ["vegan", "vegetarian"]},
+              {"name": "Sushi", "dietary restrictions": ["vegan", "gluten free"]},
           ]
         }
     },
     "Felicita’s Campus Pub": {
-        "categories": {
-            "Burgers": [
-              {"name": "Classic Burger", "ingredients": "...", "allergens": "..."},
-          ],
-          "International": [
-              {"name": "...", "ingredients": "...", "allergens": "..."},
-          ],
-        }
+        "categories": {}
     },
     "The Grill": {
         "categories": {
@@ -74,6 +67,105 @@ SUB_MENUS = {
 # def index():
 #     return "Hello World"
 #     # return render_template('index.html')
+
+def scrape_felicitas_menu():
+    """
+    Scrape the Felicita's menu from felicitas.ca/menus/.
+    Returns: {tab_name: {sub_category: [items]}}
+    e.g. {"Daily Features": {"Monday": [...], "Tuesday": [...]}, "Drinks": {"On Tap": [...], ...}}
+    """
+    url = "https://www.felicitas.ca/menus/"
+    try:
+        r = requests.get(url, timeout=15)
+        if r.status_code != 200:
+            print(f"Failed to fetch Felicita's menu: HTTP {r.status_code}")
+            return {}
+    except Exception as e:
+        print(f"Error fetching Felicita's menu: {e}")
+        return {}
+
+    soup = BeautifulSoup(r.content, 'html.parser')
+
+    tabs_container = soup.find('div', class_='e-n-tabs')
+    if not tabs_container:
+        print("Could not find tabs container on Felicita's menu page")
+        return {}
+
+    tab_buttons = tabs_container.find('div', class_='e-n-tabs-heading').find_all('button', class_='e-n-tab-title')
+    tab_names = []
+    for btn in tab_buttons:
+        title_span = btn.find('span', class_='e-n-tab-title-text')
+        tab_names.append(title_span.get_text(strip=True) if title_span else "")
+
+    tab_panels = tabs_container.find('div', class_='e-n-tabs-content').find_all(
+        'div', role='tabpanel', recursive=False
+    )
+
+    result = {}
+
+    for i, panel in enumerate(tab_panels):
+        tab_name = tab_names[i] if i < len(tab_names) else f"Section {i+1}"
+
+        headings = panel.find_all(['h2', 'h3'], class_='elementor-heading-title')
+        price_lists = panel.find_all('ul', class_='elementor-price-list')
+
+        if not headings:
+            items = extract_menu_items(price_lists)
+            if items:
+                result[tab_name] = {tab_name: items}
+        else:
+            all_elements = panel.find_all(
+                lambda tag: (tag.name in ['h2', 'h3'] and 'elementor-heading-title' in tag.get('class', []))
+                or (tag.name == 'ul' and 'elementor-price-list' in tag.get('class', []))
+            )
+
+            current_heading = tab_name
+            grouped = {}
+            for el in all_elements:
+                if el.name in ['h2', 'h3'] and 'elementor-heading-title' in el.get('class', []):
+                    heading_text = el.get_text(strip=True).rstrip(':')
+                    current_heading = heading_text.title() if heading_text.isupper() else heading_text
+                elif el.name == 'ul':
+                    items = extract_menu_items([el])
+                    if items:
+                        if current_heading not in grouped:
+                            grouped[current_heading] = []
+                        grouped[current_heading].extend(items)
+
+            if grouped:
+                result[tab_name] = grouped
+
+    return result
+
+
+def extract_menu_items(price_lists):
+    """Extract menu items (name + description) from elementor-price-list <ul> elements."""
+    items = []
+    for ul in price_lists:
+        for li in ul.find_all('li'):
+            title_el = li.find('span', class_='elementor-price-list-title')
+            desc_el = li.find('p', class_='elementor-price-list-description')
+
+            name = title_el.get_text(strip=True) if title_el else None
+            if not name:
+                continue
+
+            description = desc_el.get_text(strip=True) if desc_el else ""
+
+            dietary = []
+            full_text = f"{name} {description}".lower()
+            if 'gf' in full_text.split() or 'gluten free' in full_text or 'gluten-free' in full_text:
+                dietary.append("gluten-free")
+
+            item = {"name": name}
+            if description:
+                item["ingredients"] = description
+            if dietary:
+                item["dietary restrictions"] = dietary
+
+            items.append(item)
+    return items
+
 
 @sub_hours_blueprint.route('/sub_hours')
 def get_sub_menu():
