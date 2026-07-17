@@ -1,4 +1,5 @@
 import json
+import re
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, Blueprint, Response, jsonify
@@ -121,16 +122,39 @@ def scrape_felicitas_menu():
 
             current_heading = tab_name
             grouped = {}
+            heading_elements = {}
             for el in all_elements:
                 if el.name in ['h2', 'h3'] and 'elementor-heading-title' in el.get('class', []):
                     heading_text = el.get_text(strip=True).rstrip(':')
                     current_heading = heading_text.title() if heading_text.isupper() else heading_text
+                    heading_elements[current_heading] = el
                 elif el.name == 'ul':
                     items = extract_menu_items([el])
                     if items:
                         if current_heading not in grouped:
                             grouped[current_heading] = []
                         grouped[current_heading].extend(items)
+
+            for heading_name, heading_el in heading_elements.items():
+                if heading_name not in grouped:
+                    widget = heading_el.find_parent('div', class_='elementor-widget')
+                    if widget:
+                        container = widget.parent
+                        if container:
+                            seen = set()
+                            texts = []
+                            for el2 in container.find_all(['p', 'em']):
+                                if el2.find_parent('div', class_='elementor-widget-heading'):
+                                    continue
+                                t = el2.get_text(strip=True).replace('\xa0', ' ')
+                                if not t or t in seen:
+                                    continue
+                                if re.search(r'^\d+\.\d+\s', t):
+                                    continue
+                                seen.add(t)
+                                texts.append(t)
+                            if texts:
+                                grouped[heading_name] = [{"name": heading_name, "ingredients": " ".join(texts)}]
 
             if grouped:
                 result[tab_name] = grouped
