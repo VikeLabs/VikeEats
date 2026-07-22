@@ -3,7 +3,7 @@ from flask_cors import CORS
 from .food_outlets import food_outlets_blueprint
 from .menu import menu_blueprint
 from .search_menu import search_blueprint
-from .sub_hours import sub_hours_blueprint
+from .sub import sub_hours_blueprint
 from .db import db_blueprint
 from .ui import ui_blueprint
 from .datetimeencoder import DateTimeEncoder

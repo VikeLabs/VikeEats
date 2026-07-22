@@ -189,7 +189,7 @@ def get_ui_stores():
                 JOIN menu_categories mc ON mi.category_id = mc.id
                 JOIN menus m ON mc.menu_id = m.id
                 WHERE m.food_outlet_id = :oid
-                ORDER BY m.name, mc.name, mi.name
+                ORDER BY m.id, mc.id, mi.id
             """)
             menu_rows = conn.execute(menu_stmt, {"oid": o_id}).fetchall()
 
@@ -210,6 +210,22 @@ def get_ui_stores():
                     item_diets[item_id] = diets_for_item
 
             menu_payload = build_menu_sections_from_rows(menu_rows, item_diets)
+
+            if o_loc == "The Sub":
+                sub_location_names = {n.lower() for n in [
+                    "Bean There Cafe", "Felicita’s Campus Pub",
+                    "The Grill", "Munchie Bar", "Health Food Bar (HFB)"
+                ]}
+                sections = menu_payload.get("sections", [])
+                fel_sections = [s for s in sections if s["title"].lower() not in sub_location_names]
+                if fel_sections:
+                    other_sections = [s for s in sections if s["title"].lower() in sub_location_names]
+                    fel_parent = {
+                        "title": "Felicita’s Campus Pub",
+                        "subsections": fel_sections,
+                    }
+                    other_sections.append(fel_parent)
+                    menu_payload = {"sections": other_sections}
 
             stores.append({
                 "id": o_id,

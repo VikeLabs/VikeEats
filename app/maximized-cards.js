@@ -160,28 +160,67 @@ const MaximizedCards = ({ store, onClose }) => {
                       {section.title && menuSections.length > 1 ? (
                         <h4 className="menu-section-title">{section.title}</h4>
                       ) : null}
-                      <div className="menu-category-list">
-                        {(section.categories || []).map((cat, ci) => (
-                          <details
-                            key={`menu-${si}-${ci}-${cat.name}`}
-                            className="menu-category"
-                          >
-                            <summary className="menu-category-summary">
-                              <span className="menu-category-name">
-                                {cat.name}
-                              </span>
-                            </summary>
-                            <ul className="menu-list menu-list--nested">
-                              {(cat.items || []).map((item, index) => (
-                                <MenuItemRow
-                                  key={`${cat.name}-${item.name}-${index}`}
-                                  item={item}
-                                />
-                              ))}
-                            </ul>
-                          </details>
-                        ))}
-                      </div>
+                      {section.subsections ? (
+                        <div className="menu-category-list">
+                          {section.subsections.map((sub, ssi) => (
+                            <details
+                              key={`sub-${si}-${ssi}-${sub.title}`}
+                              className="menu-category"
+                            >
+                              <summary className="menu-category-summary">
+                                <span className="menu-category-name">
+                                  {sub.title}
+                                </span>
+                              </summary>
+                              <div className="menu-subcategory-list">
+                                {(sub.categories || []).map((cat, ci) => (
+                                  <details
+                                    key={`menu-${si}-${ssi}-${ci}-${cat.name}`}
+                                    className="menu-category menu-category--nested"
+                                  >
+                                    <summary className="menu-category-summary">
+                                      <span className="menu-category-name">
+                                        {cat.name}
+                                      </span>
+                                    </summary>
+                                    <ul className="menu-list menu-list--nested">
+                                      {(cat.items || []).map((item, index) => (
+                                        <MenuItemRow
+                                          key={`${cat.name}-${item.name}-${index}`}
+                                          item={item}
+                                        />
+                                      ))}
+                                    </ul>
+                                  </details>
+                                ))}
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="menu-category-list">
+                          {(section.categories || []).map((cat, ci) => (
+                            <details
+                              key={`menu-${si}-${ci}-${cat.name}`}
+                              className="menu-category"
+                            >
+                              <summary className="menu-category-summary">
+                                <span className="menu-category-name">
+                                  {cat.name}
+                                </span>
+                              </summary>
+                              <ul className="menu-list menu-list--nested">
+                                {(cat.items || []).map((item, index) => (
+                                  <MenuItemRow
+                                    key={`${cat.name}-${item.name}-${index}`}
+                                    item={item}
+                                  />
+                                ))}
+                              </ul>
+                            </details>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

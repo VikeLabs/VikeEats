@@ -1,16 +1,140 @@
 import json
+import re
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, Blueprint, Response, jsonify
 from datetime import datetime
 
+import os
+
 sub_hours_blueprint = Blueprint('sub_hours', __name__)
 app = Flask(__name__)
 
-# @app.route('/')
-# def index():
-#     return "Hello World"
-#     # return render_template('index.html')
+_json_path = os.path.join(os.path.dirname(__file__), 'sub_menus.json')
+with open(_json_path, 'r', encoding='utf-8') as _f:
+    SUB_MENUS = json.load(_f)
+
+def scrape_felicitas_menu():
+    """
+    Scrape the Felicita's menu from felicitas.ca/menus/.
+    Returns: {tab_name: {sub_category: [items]}}
+    e.g. {"Daily Features": {"Monday": [...], "Tuesday": [...]}, "Drinks": {"On Tap": [...], ...}}
+    """
+    url = "https://www.felicitas.ca/menus/"
+    try:
+        r = requests.get(url, timeout=15)
+        if r.status_code != 200:
+            print(f"Failed to fetch Felicita's menu: HTTP {r.status_code}")
+            return {}
+    except Exception as e:
+        print(f"Error fetching Felicita's menu: {e}")
+        return {}
+
+    soup = BeautifulSoup(r.content, 'html.parser')
+
+    tabs_container = soup.find('div', class_='e-n-tabs')
+    if not tabs_container:
+        print("Could not find tabs container on Felicita's menu page")
+        return {}
+
+    tab_buttons = tabs_container.find('div', class_='e-n-tabs-heading').find_all('button', class_='e-n-tab-title')
+    tab_names = []
+    for btn in tab_buttons:
+        title_span = btn.find('span', class_='e-n-tab-title-text')
+        tab_names.append(title_span.get_text(strip=True) if title_span else "")
+
+    tab_panels = tabs_container.find('div', class_='e-n-tabs-content').find_all(
+        'div', role='tabpanel', recursive=False
+    )
+
+    result = {}
+
+    for i, panel in enumerate(tab_panels):
+        tab_name = tab_names[i] if i < len(tab_names) else f"Section {i+1}"
+
+        headings = panel.find_all(['h2', 'h3'], class_='elementor-heading-title')
+        price_lists = panel.find_all('ul', class_='elementor-price-list')
+
+        if not headings:
+            items = extract_menu_items(price_lists)
+            if items:
+                result[tab_name] = {tab_name: items}
+        else:
+            all_elements = panel.find_all(
+                lambda tag: (tag.name in ['h2', 'h3'] and 'elementor-heading-title' in tag.get('class', []))
+                or (tag.name == 'ul' and 'elementor-price-list' in tag.get('class', []))
+            )
+
+            current_heading = tab_name
+            grouped = {}
+            heading_elements = {}
+            for el in all_elements:
+                if el.name in ['h2', 'h3'] and 'elementor-heading-title' in el.get('class', []):
+                    heading_text = el.get_text(strip=True).rstrip(':')
+                    current_heading = heading_text.title() if heading_text.isupper() else heading_text
+                    heading_elements[current_heading] = el
+                elif el.name == 'ul':
+                    items = extract_menu_items([el])
+                    if items:
+                        if current_heading not in grouped:
+                            grouped[current_heading] = []
+                        grouped[current_heading].extend(items)
+
+            for heading_name, heading_el in heading_elements.items():
+                if heading_name not in grouped:
+                    widget = heading_el.find_parent('div', class_='elementor-widget')
+                    if widget:
+                        container = widget.parent
+                        if container:
+                            seen = set()
+                            texts = []
+                            for el2 in container.find_all(['p', 'em']):
+                                if el2.find_parent('div', class_='elementor-widget-heading'):
+                                    continue
+                                t = el2.get_text(strip=True).replace('\xa0', ' ')
+                                if not t or t in seen:
+                                    continue
+                                if re.search(r'^\d+\.\d+\s', t):
+                                    continue
+                                seen.add(t)
+                                texts.append(t)
+                            if texts:
+                                grouped[heading_name] = [{"name": heading_name, "ingredients": " ".join(texts)}]
+
+            if grouped:
+                result[tab_name] = grouped
+
+    return result
+
+
+def extract_menu_items(price_lists):
+    """Extract menu items (name + description) from elementor-price-list <ul> elements."""
+    items = []
+    for ul in price_lists:
+        for li in ul.find_all('li'):
+            title_el = li.find('span', class_='elementor-price-list-title')
+            desc_el = li.find('p', class_='elementor-price-list-description')
+
+            name = title_el.get_text(strip=True) if title_el else None
+            if not name:
+                continue
+
+            description = desc_el.get_text(strip=True) if desc_el else ""
+
+            dietary = []
+            full_text = f"{name} {description}".lower()
+            if 'gf' in full_text.split() or 'gluten free' in full_text or 'gluten-free' in full_text:
+                dietary.append("gluten-free")
+
+            item = {"name": name}
+            if description:
+                item["ingredients"] = description
+            if dietary:
+                item["dietary restrictions"] = dietary
+
+            items.append(item)
+    return items
+
 
 @sub_hours_blueprint.route('/sub_hours')
 def get_sub_menu():
@@ -25,7 +149,8 @@ def hours_to_datetime(time_range:str):
     if time_range.strip().lower() == "closed":
         return None, None
     
-    # Normalize the delimiter by replacing variations with a standard one
+    # Strip trailing asterisks and normalize the delimiter
+    time_range = time_range.replace('*', '')
     time_range = time_range.replace('–', '-').replace(' ', '')
     
     # Split the input string into start and end time strings
@@ -183,10 +308,10 @@ def fels(soup):
     
     
     # Add the name and hours to the dictionary
-    fels_hours[days[0]] = {name: hours[0]}
-    fels_hours[days[1]] = {name: hours[1]}
-    fels_hours[days[2]] = {name: hours[2]}
-    
+    for i in range(len(days)):
+        if i < len(hours) and hours[i]:
+            fels_hours[days[i]] = {name: hours[i]}
+
     return fels_hours
 
 def the_grill(soup):
