@@ -1,0 +1,626 @@
+{
+  "Bean There Cafe": {
+    "categories": {
+      "Menu": [
+        {
+          "name": "Brewed Coffee",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Espresso",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Latte",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Cappuccino",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Americano",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Mocha",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Hot Chocolate",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Iced Mocha",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Iced Latte",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Iced Americano",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Tea",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Steamed Milk",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Chai Latte",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "London Fog",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Matcha Latte",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Muffins",
+          "dietary restrictions": [
+            "vegetarian",
+            "gluten free"
+          ]
+        },
+        {
+          "name": "Bagels"
+        },
+        {
+          "name": "Egg Muffins",
+          "dietary restrictions": [
+            "vegetarian"
+          ]
+        },
+        {
+          "name": "Pasteries"
+        },
+        {
+          "name": "Cookies",
+          "dietary restrictions": [
+            "vegetarian"
+          ]
+        },
+        {
+          "name": "Sandwiches",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian"
+          ]
+        },
+        {
+          "name": "Wraps",
+          "dietary restrictions": [
+            "vegan",
+            "vegetarian"
+          ]
+        },
+        {
+          "name": "Sushi",
+          "dietary restrictions": [
+            "vegan",
+            "gluten free"
+          ]
+        }
+      ]
+    }
+  },
+  "Felicita’s Campus Pub": {
+    "categories": {}
+  },
+  "The Grill": {
+    "categories": {
+      "Burgers": [
+        {
+          "name": "The Works Burger",
+          "ingredients": "Charbroiled beef patty with bacon, cheddar cheese, mushrooms, onions, lettuce, tomato, pickles, burger sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Cheese Burger",
+          "ingredients": "Charbroiled beef patty with cheddar cheese, lettuce, tomato, pickles, burger sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Double Cheese Burger",
+          "ingredients": "2 charbroiled beef patties with 2 slices of cheddar cheese, burger sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Bacon Cheddar Burger",
+          "ingredients": "Charbroiled beef patty with bacon, cheddar cheese, lettuce, tomato, pickles, burger sauce",
+          "allergens": ""
+        },
+        {
+          "name": "BBQ Mushroom & Bacon Burger",
+          "ingredients": "Charbroiled beef patty with bacon, fried onions, mushrooms, lettuce, BBQ sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Basic Burger",
+          "ingredients": "Charbroiled beef patty with lettuce, tomato, pickles, burger sauce",
+          "allergens": ""
+        },
+        {
+          "name": "West Coast Salmon Burger",
+          "ingredients": "Alaskan wild caught salmon patty charbroiled and garnished with a tangy coleslaw",
+          "allergens": ""
+        },
+        {
+          "name": "Crispy Chicken Burger",
+          "ingredients": "Breaded chicken strips with lettuce, tomato, pickles, burger sauce",
+          "allergens": ""
+        },
+        {
+          "name": "French Onion & Bacon Grilled Cheese Sandwich",
+          "ingredients": "French bread topped with mixed cheese, fried onions, bacon",
+          "allergens": ""
+        },
+        {
+          "name": "Classic Grilled Cheese Sandwich",
+          "ingredients": "French bread, garlic butter, cheddar cheese",
+          "allergens": ""
+        },
+        {
+          "name": "Grilled Chicken Sandwich",
+          "ingredients": "Grilled chicken breast and mixed cheese on French bread with basil mayo",
+          "allergens": ""
+        }
+      ],
+      "International": [
+        {
+          "name": "Curry Noodle Soup",
+          "ingredients": "Rice noodles in a spicy red Thai curry broth topped with fresh vegetables and your choice of chicken or tofu",
+          "allergens": ""
+        },
+        {
+          "name": "Sweet & Sour Pork",
+          "ingredients": "Crispy pork tossed in a sweet & sour pineapple sauce served on steamed rice",
+          "allergens": ""
+        },
+        {
+          "name": "Hokkien Noodle Stirfry",
+          "ingredients": "Thick wheat noodles stirfried with chicken or tofu, carrots, sui choy, and green onion in a sweet ginger & dark soy coconut sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Ginger Beef Stirfry",
+          "ingredients": "Crispy beef strips stirfried with peppers, onion, and carrot in a spicy sweet ginger sauce, served on rice",
+          "allergens": ""
+        },
+        {
+          "name": "Chicken Chow Mein",
+          "ingredients": "Chow mein noodles and chicken stirfried with carrots, cabbage, bean sprouts, and green onion in a savoury sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Indian Style Chicken Curry",
+          "ingredients": "Diced chicken in a rich and spicy tomato curry served with rice and a warm pita",
+          "allergens": ""
+        },
+        {
+          "name": "Chicken Shawarma Bowl",
+          "ingredients": "Spiced chicken served on rice with lettuce, tomato, banana peppers, sweet pickle relish, and Tahini yogurt sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Meatball Sub",
+          "ingredients": "Beef meatballs with Marinara sauce topped with mixed cheese and served in a sub bun",
+          "allergens": ""
+        },
+        {
+          "name": "Greek Gyro",
+          "ingredients": "Sliced lamb and beef gyro wrapped in a pita with lettuce, tomato, diced onion and tzatziki",
+          "allergens": ""
+        },
+        {
+          "name": "East Coast Donair",
+          "ingredients": "Beef and lamb gyro wrapped in a pita with diced onion, tomato, and a sweet garlic sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Chicken Shawarma Wrap",
+          "ingredients": "Spiced chicken wrapped in a pita with lettuce, tomato, banana peppers, sweet pickle relish, and Tahini yogurt sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Black Bean Burrito",
+          "ingredients": "Black beans, Spanish rice, cheese, lettuce, sour cream and salsa wrapped in a flour tortilla",
+          "allergens": ""
+        },
+        {
+          "name": "Pulled Pork Burrito",
+          "ingredients": "Seasoned slow cooked BBQ pork wrapped in a flour tortilla with Spanish rice, sour cream and salsa",
+          "allergens": ""
+        },
+        {
+          "name": "Spaghetti & Meatballs",
+          "ingredients": "Pork meatballs in a Marinara sauce served on spaghetti with parmesan cheese and garlic toast",
+          "allergens": ""
+        }
+      ],
+      "Favourites": [
+        {
+          "name": "Chicken Caesar Wrap",
+          "ingredients": "Breaded chicken and Caesar salad with parmesan cheese wrapped in a flour tortilla, served with your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "Pulled Chicken Wrap",
+          "ingredients": "Chipotle chicken rolled in a flour tortilla with lettuce, tomato and sour cream, served with your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "Black Bean Wrap",
+          "ingredients": "Seasoned black beans with onions and peppers wrapped in a flour tortilla with lettuce, cheese, tomato, and sour cream, served with your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "Cod Wrap",
+          "ingredients": "Battered cod and coleslaw wrapped in a flour tortilla, served with your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "Chicken Strips",
+          "ingredients": "Breaded chicken strips fried until crispy and served with your choice of dipping sauce and side",
+          "allergens": ""
+        },
+        {
+          "name": "Pulled Pork or Chicken Quesadilla",
+          "ingredients": "BBQ Pork or Chipotle Chicken with cheese folded in a flour tortilla and grilled, served with salsa, sour cream and your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "Chicken Caesar Salad",
+          "ingredients": "Caesar salad topped with crispy chicken and parmesan cheese, served with garlic bread",
+          "allergens": ""
+        },
+        {
+          "name": "The Breakfast Kaiser",
+          "ingredients": "Fried egg, cheddar cheese, bacon, lettuce, tomato and mayo on a Brioche bun, served with your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "Breakfast Wrap",
+          "ingredients": "Scrambled eggs with cheese rolled in a flour tortilla with lettuce and burger sauce, served with your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "Kimchi Hash Bowl",
+          "ingredients": "Hash browns topped with scrambled eggs, fresh kimchi, sriracha mayo and green onion",
+          "allergens": ""
+        },
+        {
+          "name": "Ranchero Breakfast Bowl",
+          "ingredients": "Scrambled eggs tossed with hashbrowns, seasoned black beans, cheese, sour cream, salsa and sriracha mayo",
+          "allergens": ""
+        },
+        {
+          "name": "Farmers Wrap",
+          "ingredients": "Scrambled eggs, bacon, cheese, hashbrowns and sriracha mayo in a flour tortilla, served with your choice of side",
+          "allergens": ""
+        },
+        {
+          "name": "The Grill Poutine",
+          "ingredients": "French fries topped with mixed cheese and beef gravy",
+          "allergens": ""
+        },
+        {
+          "name": "BBQ Pork Poutine",
+          "ingredients": "French fries topped with Pulled Pork, mixed cheese and BBQ sauce",
+          "allergens": ""
+        },
+        {
+          "name": "Fish & Chips",
+          "ingredients": "Battered cod strips served with fries, coleslaw and tartar sauce",
+          "allergens": ""
+        }
+      ]
+    }
+  },
+  "Health Food Bar (HFB)": {
+    "categories": {
+      "Bowls & Salads": [
+        {
+          "name": "Chicken Rice Bowl",
+          "ingredients": "Diced chicken marinated with Peanut, Teriyaki or Hoisin sauce served on brown rice with Asian slaw, corn and sesame seeds",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Tofu Rice Bowl",
+          "ingredients": "Diced tofu marinated with Peanut, Teriyaki or Hoisin sauce served on brown rice with Asian slaw, corn and sesame seeds",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chicken or Beef Taco Bowl",
+          "ingredients": "Diced chicken or Seasoned Beef served on brown rice with black beans, salsa, jalapenos, olives, corn, sour cream, cheese, and tortilla chips",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chili Taco Bowl",
+          "ingredients": "Vegetarian Chili served on brown rice and garnished with jalapenos, sour cream, cheese, and tortilla chips",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Falafel Bowl",
+          "ingredients": "Falafel on brown rice with cucumber, tomato, olives, tzatziki and tahini",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Daal with Rice",
+          "ingredients": "Lentils and split peas stewed with garlic, ginger and Indian spices, served with brown rice and mango chutney",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Vegetarian Chili",
+          "ingredients": "Our own vegan chili served with corn tortilla chips, cheese and sour cream",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chicken Taco Salad",
+          "ingredients": "Mixed greens topped with chicken, cheese, salsa, sour cream, olives, tomato, jalapeno peppers and tortilla chips",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chili Taco Salad",
+          "ingredients": "Mixed greens topped with chili, cheese, salsa, sour cream, olives, tomato, jalapeno peppers and tortilla chips",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chicken Caesar Salad",
+          "ingredients": "Caesar Salad topped with diced chicken, Parmesan cheese and croutons",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Falafel Caesar Salad",
+          "ingredients": "Caesar Salad topped with falafel, Parmesan cheese and croutons",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Caesar Salad",
+          "ingredients": "Romaine lettuce tossed with our own Caesar dressing and topped with Parmesan cheese and croutons",
+          "dietary restrictions": []
+        },
+        {
+          "name": "House Salad",
+          "ingredients": "Mixed greens tossed with your choice of dressing and topped with cucumber, tomato, carrots and roasted pumpkin seeds",
+          "dietary restrictions": []
+        }
+      ],
+      "Sandwiches": [
+        {
+          "name": "BLT Sandwich",
+          "ingredients": "Bacon, lettuce, tomato and mayo on a ciabatta bun",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chicken & Swiss Sandwich",
+          "ingredients": "Ciabatta bun with Smoked chicken, Swiss cheese, roasted red pepper, spinach and basil mayo",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Turkey & Bacon Sandwich",
+          "ingredients": "Ciabatta bun with sliced Turkey, Bacon, lettuce, tomato and pesto mayo",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Roast Beef & Cheddar Sandwich",
+          "ingredients": "Multigrain bread with sliced roast beef, Cheddar cheese, yellow mustard, mayo, onions and tomato",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Ham and Swiss Sandwich",
+          "ingredients": "Multigrain bread with ham, swiss cheese, dijon mustard, pickles and mayo",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Toasted Tuna Melt",
+          "ingredients": "Ciabatta bun topped with tuna salad and cheese then toasted",
+          "dietary restrictions": []
+        },
+        {
+          "name": "HFB Cheese Steak Melt",
+          "ingredients": "Ciabatta bun with basil mayo topped with roast beef, roasted veg, onion, and Swiss cheese then toasted",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chicken Salad Melt",
+          "ingredients": "Ciabatta bun topped with Cranberry Chicken Salad and Gouda Cheese then toasted",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Pita Melt",
+          "ingredients": "Black Forest Ham, cheese, spinach, mayo and Dijon mustard served toasted on a pita",
+          "dietary restrictions": []
+        }
+      ],
+      "Wraps": [
+        {
+          "name": "Mexi Chicken Wrap",
+          "ingredients": "Diced chicken or seasoned beef wrapped in a whole wheat tortilla with lettuce, tomato, black olives, jalapenos, cheese, salsa and sour cream",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Black Bean Wrap",
+          "ingredients": "Seasoned black beans with brown rice, lettuce, tomato, black olives, jalapenos, cheese, salsa and sour cream wrapped in a whole wheat tortilla",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Chicken Caesar Wrap",
+          "ingredients": "Diced chicken with caesar salad and parmesan cheese wrapped in a whole wheat tortilla",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Falafel Caesar Wrap",
+          "ingredients": "Falafel with caesar salad and parmesan cheese wrapped in a whole wheat tortilla",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Spicy Chicken Peanut Wrap",
+          "ingredients": "Seasoned chicken wrapped in a whole wheat tortilla with lettuce, rice, carrot, cucumber, and peanut sauce",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Teriyaki Chicken Wrap",
+          "ingredients": "Diced chicken with teriyaki sauce, brown rice, lettuce, cucumber and carrot wrapped in a whole wheat tortilla",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Hummus & Roast Veg Wrap",
+          "ingredients": "Roasted vegetables, Hummus, carrots, lettuce, cucumber, spinach and Tzatziki wrapped in a whole wheat tortilla",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Falafel Pita",
+          "ingredients": "Falafel with lettuce, cucumber, carrot and Tzatziki wrapped in a Greek style pita",
+          "dietary restrictions": []
+        }
+      ],
+      "Yogurt Smoothies": [
+        {
+          "name": "Berry All The Way",
+          "ingredients": "Raspberry, strawberry, blackberry, blueberry",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Strawberry Pina Colada",
+          "ingredients": "Strawberry, pineapple juice, banana, coconut",
+          "dietary restrictions": []
+        },
+        {
+          "name": "High Five",
+          "ingredients": "Peach, mango, orange juice, pineapple juice, banana",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Mango Sub",
+          "ingredients": "Mango, strawberry, peach, banana",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Matcha Cranberry",
+          "ingredients": "Green tea powder, cranberry",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Monkey Madness",
+          "ingredients": "Peanut butter, banana, chocolate",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Passion Fruit",
+          "ingredients": "Passion fruit, strawberry, peach, banana, orange juice",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Pink Panther",
+          "ingredients": "Beet, cranberry, raspberry, banana",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Strawberry Twist",
+          "ingredients": "Strawberry nectar, strawberry, banana",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Zig Zag",
+          "ingredients": "Raspberry, strawberry, banana",
+          "dietary restrictions": []
+        }
+      ],
+      "Puree Smoothies": [
+        {
+          "name": "Mango Tropics",
+          "ingredients": "Mango, pineapple, banana",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Tropical Sunshine",
+          "ingredients": "Pineapple, banana, guava, passion fruit",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Pineapple Paradise",
+          "ingredients": "Pineapple, banana, coconut",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Strawberry",
+          "ingredients": "",
+          "dietary restrictions": []
+        },
+        {
+          "name": "Peach Pear Apricot",
+          "ingredients": "",
+          "dietary restrictions": []
+        }
+      ]
+    }
+  }
+}
