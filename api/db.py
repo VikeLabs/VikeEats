@@ -6,6 +6,7 @@ from .menu import mystic_cove_menu_dict, others_menus_dict
 from . import create_db
 import json
 from flask import Flask, Blueprint, jsonify
+import logging
 import os
 import re
 
@@ -16,10 +17,14 @@ DB_URL = f"sqlite:///{DB_PATH}"
 db_blueprint = Blueprint('db', __name__)
 app = Flask(__name__)
 
+# UVic consolidated every kiosk menu onto the Ingredients & Allergens page; the
+# per-outlet pages under /where/ are now description-only and carry no tabs.
+UVIC_MENU_URL = "https://www.uvic.ca/services/food/nutrition/ingredientsandallergens/index.php"
+
 MENU_MAPPING = {
     "the cove": {
         "type": "cove_mystic",
-        "url": "https://www.uvic.ca/services/food/where/thecove/index.php",
+        "url": UVIC_MENU_URL,
         "sub_locations": {
             "Verde": "tabs-verde",
             "Mykonos": "tabs-mykonos",
@@ -36,7 +41,7 @@ MENU_MAPPING = {
     },
     "mystic market": {
         "type": "cove_mystic",
-        "url": "https://www.uvic.ca/services/food/where/mysticmarket/index.php",
+        "url": UVIC_MENU_URL,
         "sub_locations": {
             "Chopbox": "tabs-chopbox",
             "Fresco Taco": "tabs-fresco-taco",
@@ -531,23 +536,13 @@ def db_um():
 
             if mapping["type"] == "cove_mystic":
                 for sub_name, tab_id in mapping["sub_locations"].items():
-                    # Attempt to find sub-outlet ID for direct association
-                    sub_outlet_id = conn.execute(
-                        select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(sub_name))
-                    ).scalar()
-                    
-                    # If not found, try common name variations
-                    if not sub_outlet_id:
-                        variations = [sub_name.lower() + " pasta", sub_name.lower() + " pizza"]
-                        for var in variations:
-                            sub_outlet_id = conn.execute(
-                                select(food_outlets.c.id).where(food_outlets.c.name == normalize_name(var))
-                            ).scalar()
-                            if sub_outlet_id: break
+                    # Kiosk menus always hang off the parent venue. Matching them to a
+                    # same-named food_outlets row instead scattered Verde, Mykonos etc.
+                    # across the map as soon as UVic started listing kiosks on the
+                    # hours page, and left the Cove card empty.
+                    target_id = parent_id
 
-                    # Target the sub-outlet if it exists, otherwise the parent
-                    target_id = sub_outlet_id if sub_outlet_id else parent_id
-                    
+
                     menu_id = conn.execute(
                         select(menus.c.id).where(
                             (menus.c.food_outlet_id == target_id) & (menus.c.name == sub_name)
@@ -560,6 +555,12 @@ def db_um():
                     try:
                         scraped_data = mystic_cove_menu_dict(mapping["url"], tab_id)
                         if not scraped_data:
+                            # Empty means the tab vanished from the page, not that the
+                            # kiosk has no food. Stay loud: this is how UVic moving the
+                            # menus went unnoticed until the UI showed empty outlets.
+                            logging.error(
+                                "No menu data for %s (tab %s) at %s", sub_name, tab_id, mapping["url"]
+                            )
                             continue
 
                         clear_menu_categories_and_items(
@@ -585,7 +586,7 @@ def db_um():
                                 for item_name, details in iter_leaf_menu_items(items):
                                     process_scraped_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
                     except Exception as e:
-                        print(f"Error scraping menu for {sub_name}: {e}")
+                        logging.error("Error scraping menu for %s (tab %s): %s", sub_name, tab_id, e)
 
             elif mapping["type"] == "sub":
                 for sub_name in mapping["sub_locations"]:
@@ -656,7 +657,7 @@ def db_um():
                         details = {"dietary restrictions": [], "ingredients": "", "allergens": ""}
                         process_menu_item(conn, menu_items, dietary_restrictions, menu_item_restrictions, cat_id, item_name, details)
                 except Exception as e:
-                    print(f"Error scraping menu for {outlet_norm_name}: {e}")
+                    logging.error("Error scraping menu for %s: %s", outlet_norm_name, e)
         conn.commit()
     return {"status": "Menu update complete"}
 

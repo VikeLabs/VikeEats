@@ -4,6 +4,13 @@ from datetime import datetime
 import calendar
 from collections import OrderedDict
 
+from .db import MENU_MAPPING, normalize_name
+
+# The UVic hours page lists individual kiosks (verde, chopbox, port cafe...), and
+# db_ufo() turns each into a food_outlets row. Only the venues we actually curate
+# belong on the map; the rest exist purely to carry scraped hours.
+PARENT_OUTLET_NAMES = {normalize_name(name) for name in MENU_MAPPING}
+
 # Database configuration
 DB_PATH = 'vikeeats.db'
 DB_URL = f"sqlite:///{DB_PATH}"
@@ -139,7 +146,9 @@ def get_ui_stores():
     stores = []
     
     with engine.connect() as conn:
-        outlets_rows = conn.execute(select(food_outlets)).fetchall()
+        outlets_rows = conn.execute(
+            select(food_outlets).where(food_outlets.c.name.in_(PARENT_OUTLET_NAMES))
+        ).fetchall()
 
         for outlet in outlets_rows:
             o_id, o_name, o_loc = outlet
