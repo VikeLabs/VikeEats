@@ -1,9 +1,7 @@
 from flask import Blueprint, jsonify, request
-from sqlalchemy import create_engine, MetaData, select, and_
+from sqlalchemy import MetaData, select, and_
 
-# Database configuration
-DB_PATH = 'vikeeats.db'
-DB_URL = f"sqlite:///{DB_PATH}"
+from .config import get_engine
 
 # Create a blueprint for search
 search_blueprint = Blueprint('search', __name__)
@@ -28,7 +26,7 @@ def search_menu():
     return jsonify(db_search(restriction, food_outlet_param, menu_item_query))
 
 def db_search(restriction_name, outlet_name_query, item_name_query):
-    engine = create_engine(DB_URL)
+    engine = get_engine()
     metadata = MetaData()
     metadata.reflect(bind=engine)
 

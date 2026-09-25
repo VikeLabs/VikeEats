@@ -1,18 +1,14 @@
-from sqlalchemy import create_engine, MetaData, select, update, delete
+from sqlalchemy import MetaData, select, update, delete
 from . import sub
 from .sub import SUB_MENUS, scrape_felicitas_menu
 from .food_outlets import get_food_outlets_dict
 from .menu import mystic_cove_menu_dict, others_menus_dict
 from . import create_db
+from .config import database_exists, get_engine
 import json
 from flask import Flask, Blueprint, jsonify
 import logging
-import os
 import re
-
-# Database configuration
-DB_PATH = 'vikeeats.db'
-DB_URL = f"sqlite:///{DB_PATH}"
 
 db_blueprint = Blueprint('db', __name__)
 app = Flask(__name__)
@@ -158,10 +154,10 @@ def normalize_name(name):
 @db_blueprint.route('/db/update/all')
 def db_update_all():
     """Triggers a full refresh of all database tables."""
-    if not os.path.exists(DB_PATH):
+    if not database_exists():
         create_db.create_database()
     
-    engine = create_engine(DB_URL)
+    engine = get_engine()
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
     
@@ -185,13 +181,13 @@ Updates FoodOutlets in DB
 '''
 @db_blueprint.route('/db/update/food_outlets')
 def db_ufor():
-    if not os.path.exists(DB_PATH):
+    if not database_exists():
         return jsonify("Database not found, create it at /api/db/create")
     else:
         return jsonify(db_ufo())
 
 def db_ufo():
-    engine = create_engine(DB_URL)
+    engine = get_engine()
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
 
@@ -264,23 +260,23 @@ def db_ufo():
                     conn.execute(db_insert)
         conn.commit()
 
-    result = engine.connect().execute(food_outlets.select())
-    row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
-    return row_dict
+    with engine.connect() as conn:
+        result = conn.execute(food_outlets.select())
+        return {idx + 1: str(row) for idx, row in enumerate(result)}
 
 '''
 Updates Opperating Hours in DB
 '''
 @db_blueprint.route('/db/update/operating_hours')
 def db_uohr():
-    if not os.path.exists(DB_PATH):
+    if not database_exists():
         return jsonify("Database not found, create it at /api/db/create")
     else:
         db_ufo()
         return jsonify(db_uoh())
 
 def db_uoh():
-    engine = create_engine(DB_URL)
+    engine = get_engine()
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
 
@@ -382,16 +378,16 @@ def db_uoh():
                     ))
         conn.commit()
 
-    result = engine.connect().execute(operating_hours.select())
-    row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
-    return row_dict
+    with engine.connect() as conn:
+        result = conn.execute(operating_hours.select())
+        return {idx + 1: str(row) for idx, row in enumerate(result)}
 
 '''
 Updates Time Slots in DB
 '''
 @db_blueprint.route('/db/update/time_slots')
 def db_utsr():
-    if not os.path.exists(DB_PATH):
+    if not database_exists():
         return jsonify("Database not found, create it at /api/db/create")
     else:
         db_ufo()
@@ -399,7 +395,7 @@ def db_utsr():
         return jsonify(db_uts())
 
 def db_uts():
-    engine = create_engine(DB_URL)
+    engine = get_engine()
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
 
@@ -499,23 +495,23 @@ def db_uts():
                             ))
         conn.commit()
 
-    result = engine.connect().execute(time_slots.select())
-    row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
-    return row_dict
+    with engine.connect() as conn:
+        result = conn.execute(time_slots.select())
+        return {idx + 1: str(row) for idx, row in enumerate(result)}
 
 '''
 Updates Menus in DB
 '''
 @db_blueprint.route('/db/update/menus')
 def db_umr():
-    if not os.path.exists(DB_PATH):
+    if not database_exists():
         return jsonify("Database not found, create it at /api/db/create")
     else:
         db_ufo()
         return jsonify(db_um())
 
 def db_um():
-    engine = create_engine(DB_URL)
+    engine = get_engine()
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
 
@@ -822,50 +818,30 @@ def process_scraped_item(conn, menu_items_table, restrictions_table, junction_ta
         details,
     )
 
-# Displays FoodOutlets Currently saved in DB
-@db_blueprint.route('/db/food_outlets')
-def db_fo():
-    if not os.path.exists(DB_PATH):
+def dump_table(table_name):
+    """Row dump shared by the read-only /db/<table> display routes."""
+    if not database_exists():
         return jsonify("Database not found, create it at /api/db/create")
-    else:
-        engine = create_engine(DB_URL)
+
+    engine = get_engine()
     metadata_obj = MetaData()
     metadata_obj.reflect(bind=engine)
 
-    food_outlets = metadata_obj.tables["food_outlets"]
+    with engine.connect() as conn:
+        result = conn.execute(metadata_obj.tables[table_name].select())
+        return jsonify({idx + 1: str(row) for idx, row in enumerate(result)})
 
-    result = engine.connect().execute(food_outlets.select())
-    row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
-    return jsonify(row_dict)
+# Displays FoodOutlets Currently saved in DB
+@db_blueprint.route('/db/food_outlets')
+def db_fo():
+    return dump_table("food_outlets")
 
 # Displays operating hours Currently saved in DB
 @db_blueprint.route('/db/operating_hours')
 def db_oh():
-    if not os.path.exists(DB_PATH):
-        return jsonify("Database not found, create it at /api/db/create")
-    else:
-        engine = create_engine(DB_URL)
-    metadata_obj = MetaData()
-    metadata_obj.reflect(bind=engine)
-
-    operating_hours = metadata_obj.tables["operating_hours"]
-
-    result = engine.connect().execute(operating_hours.select())
-    row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
-    return jsonify(row_dict)
+    return dump_table("operating_hours")
 
 # Displays time slots Currently saved in DB
 @db_blueprint.route('/db/time_slots')
 def db_ts():
-    if not os.path.exists(DB_PATH):
-        return jsonify("Database not found, create it at /api/db/create")
-    else:
-        engine = create_engine(DB_URL)
-    metadata_obj = MetaData()
-    metadata_obj.reflect(bind=engine)
-
-    time_slots = metadata_obj.tables["time_slots"]
-
-    result = engine.connect().execute(time_slots.select())
-    row_dict = {idx + 1: str(row) for idx, row in enumerate(result)}
-    return jsonify(row_dict)
+    return dump_table("time_slots")

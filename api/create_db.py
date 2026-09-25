@@ -2,8 +2,8 @@ from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Boolean,
 import os
 
 def create_database():
-    from .db import DB_URL
-    engine = create_engine(DB_URL, echo=True)
+    from .config import get_engine
+    engine = get_engine()
     metadata_obj = MetaData()
 
     # Food outlets table

@@ -1,19 +1,16 @@
 from flask import Blueprint, jsonify
-from sqlalchemy import create_engine, MetaData, select, text
+from sqlalchemy import MetaData, select, text
 from datetime import datetime
 import calendar
 from collections import OrderedDict
 
+from .config import get_engine
 from .db import MENU_MAPPING, normalize_name
 
 # The UVic hours page lists individual kiosks (verde, chopbox, port cafe...), and
 # db_ufo() turns each into a food_outlets row. Only the venues we actually curate
 # belong on the map; the rest exist purely to carry scraped hours.
 PARENT_OUTLET_NAMES = {normalize_name(name) for name in MENU_MAPPING}
-
-# Database configuration
-DB_PATH = 'vikeeats.db'
-DB_URL = f"sqlite:///{DB_PATH}"
 
 ui_blueprint = Blueprint('ui', __name__)
 
@@ -135,7 +132,7 @@ BUILDING_METADATA = {
 
 @ui_blueprint.route('/ui/stores')
 def get_ui_stores():
-    engine = create_engine(DB_URL)
+    engine = get_engine()
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
