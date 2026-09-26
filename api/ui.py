@@ -5,12 +5,12 @@ import calendar
 from collections import OrderedDict
 
 from .config import get_engine
-from .db import MENU_MAPPING, normalize_name
+from .db import VENUES, normalize_name
 
 # The UVic hours page lists individual kiosks (verde, chopbox, port cafe...), and
 # db_ufo() turns each into a food_outlets row. Only the venues we actually curate
 # belong on the map; the rest exist purely to carry scraped hours.
-PARENT_OUTLET_NAMES = {normalize_name(name) for name in MENU_MAPPING}
+PARENT_OUTLET_NAMES = {normalize_name(name) for name in VENUES}
 
 ui_blueprint = Blueprint('ui', __name__)
 
