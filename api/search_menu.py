@@ -1,14 +1,23 @@
 from flask import Blueprint, jsonify, request
-from sqlalchemy import MetaData, select, and_
+from sqlalchemy import select, and_
+from collections import defaultdict
 
 from .config import get_engine
+from .create_db import (
+    buildings,
+    dietary_restrictions,
+    food_outlets,
+    menu_item_restrictions,
+    menu_items,
+)
 
 # Create a blueprint for search
 search_blueprint = Blueprint('search', __name__)
 
+
 @search_blueprint.route('/search')
 def search_menu():
-    """ 
+    """
     Searches the local database for menu items based on restrictions, outlets, and names.
     """
     restriction = request.args.get('restriction')
@@ -25,42 +34,31 @@ def search_menu():
 
     return jsonify(db_search(restriction, food_outlet_param, menu_item_query))
 
+
 def db_search(restriction_name, outlet_name_query, item_name_query):
     engine = get_engine()
-    metadata = MetaData()
-    metadata.reflect(bind=engine)
 
-    # Tables
-    food_outlets = metadata.tables["food_outlets"]
-    menus = metadata.tables["menus"]
-    menu_categories = metadata.tables["menu_categories"]
-    menu_items = metadata.tables["menu_items"]
-    dietary_restrictions = metadata.tables["dietary_restrictions"]
-    menu_item_restrictions = metadata.tables["menu_item_restrictions"]
-
-    # Base query
     stmt = select(
+        buildings.c.name.label("building_name"),
         food_outlets.c.name.label("outlet_name"),
-        menus.c.name.label("menu_name"),
-        menu_categories.c.name.label("category_name"),
+        menu_items.c.category,
         menu_items.c.name.label("item_name"),
         menu_items.c.ingredients,
         menu_items.c.allergens,
-        menu_items.c.id.label("item_id")
+        menu_items.c.id.label("item_id"),
     ).select_from(
-        food_outlets.join(menus).join(menu_categories).join(menu_items)
-    )
+        menu_items.join(food_outlets).join(buildings)
+    ).order_by(buildings.c.id, food_outlets.c.id, menu_items.c.id)
 
-    # Filtering
+    # ilike throughout: SQLite's LIKE ignores case but Postgres' does not, so
+    # plain LIKE would quietly stop matching once the data moves to Neon.
     filters = []
     if outlet_name_query:
-        # Check if query is 'cove' or 'mystic' to match parent outlets
-        if 'cove' in outlet_name_query:
-            filters.append(food_outlets.c.name.like('%cove%'))
-        elif 'mystic' in outlet_name_query:
-            filters.append(food_outlets.c.name.like('%mystic%'))
-        else:
-            filters.append(food_outlets.c.name.like(f'%{outlet_name_query}%'))
+        # The UI's dropdown is populated from store.name, which is a building.
+        filters.append(
+            buildings.c.name.ilike(f'%{outlet_name_query}%')
+            | food_outlets.c.name.ilike(f'%{outlet_name_query}%')
+        )
 
     if item_name_query:
         filters.append(menu_items.c.name.ilike(f'%{item_name_query}%'))
@@ -75,47 +73,34 @@ def db_search(restriction_name, outlet_name_query, item_name_query):
     if filters:
         stmt = stmt.where(and_(*filters))
 
-    results = {}
     with engine.connect() as conn:
         rows = conn.execute(stmt).fetchall()
+        if not rows:
+            return {}
 
-        # We need restrictions for each item to populate the result
-        for row in rows:
-            # Fetch restrictions for this item
-            rest_stmt = select(dietary_restrictions.c.name).select_from(
-                dietary_restrictions.join(menu_item_restrictions)
-            ).where(menu_item_restrictions.c.menu_item_id == row.item_id)
-            item_restrictions = [r[0] for r in conn.execute(rest_stmt).fetchall()]
+        # One query for the matched items' restrictions rather than one each.
+        item_ids = [row.item_id for row in rows]
+        restriction_rows = conn.execute(
+            select(menu_item_restrictions.c.menu_item_id, dietary_restrictions.c.name)
+            .select_from(menu_item_restrictions.join(dietary_restrictions))
+            .where(menu_item_restrictions.c.menu_item_id.in_(item_ids))
+        ).fetchall()
 
-            # Organize into nested structure
-            # { outlet: { menu: { category: { item: { details } } } } }
+    item_restrictions = defaultdict(list)
+    for item_id, name in restriction_rows:
+        item_restrictions[item_id].append(name)
 
-            # Map database names back to "The Cove" / "Mystic Market" if applicable
-            top_level = row.outlet_name.title()
-            if 'cove' in row.outlet_name: top_level = "The Cove"
-            elif 'mystic' in row.outlet_name: top_level = "Mystic Market"
-
-            if top_level not in results: results[top_level] = {}
-
-            # Use menu name as location (e.g. Greens, Chop Box)
-            location = row.menu_name
-            if location not in results[top_level]: results[top_level][location] = {}
-
-            category = row.category_name
-            # If category is "Main" or "General", we might want to skip one level of nesting
-            # but for consistency with original search, we'll keep it if it's not a special location
-
-            item_details = {
-                "dietary restrictions": item_restrictions,
-                "ingredients": row.ingredients,
-                "allergens": row.allergens
-            }
-
-            if location in ['Asian Fusion', 'Bread', 'Halal', 'General']:
-                results[top_level][location][row.item_name] = item_details
-            else:
-                if category not in results[top_level][location]:
-                    results[top_level][location][category] = {}
-                results[top_level][location][category][row.item_name] = item_details
+    # { building: { outlet: { category: { item: details } } } } -- the same
+    # nesting depth the old shape had, so SearchBar.js needs no changes.
+    results = {}
+    for row in rows:
+        outlets = results.setdefault(row.building_name, {})
+        categories = outlets.setdefault(row.outlet_name, {})
+        items = categories.setdefault(row.category, {})
+        items[row.item_name] = {
+            "dietary restrictions": item_restrictions.get(row.item_id, []),
+            "ingredients": row.ingredients,
+            "allergens": row.allergens,
+        }
 
     return results
