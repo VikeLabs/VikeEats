@@ -70,15 +70,25 @@ time_slots = Table(
 
 # Category is a plain string rather than its own table: it only ever groups
 # items within one outlet, and never carried data of its own.
+#
+# subcategory is a second grouping level, empty for almost everything. Felicita's
+# publishes nested tabs (Drinks > Wine, Daily Features > Monday) and the UI
+# renders those as a two-level accordion, so the two levels are kept in separate
+# columns rather than joined into one string and split apart again downstream.
+# Empty rather than NULL so it still counts toward the unique constraint --
+# NULLs never compare equal, which would silently allow duplicate rows.
 menu_items = Table(
     "menu_items", metadata_obj,
     Column("id", Integer, primary_key=True),
     Column("outlet_id", Integer, ForeignKey("food_outlets.id"), nullable=False),
     Column("category", VARCHAR, nullable=False, default="Main"),
+    Column("subcategory", VARCHAR, nullable=False, default=""),
     Column("name", VARCHAR, nullable=False),
     Column("ingredients", TEXT),
     Column("allergens", VARCHAR),
-    UniqueConstraint("outlet_id", "category", "name", name="uq_item_per_category"),
+    UniqueConstraint(
+        "outlet_id", "category", "subcategory", "name", name="uq_item_per_category"
+    ),
 )
 
 dietary_restrictions = Table(

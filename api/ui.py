@@ -35,20 +35,21 @@ DEFAULT_IMAGE = "https://www.uvic.ca/services/food/assets/images/photos/main/san
 
 def build_menu_sections_from_rows(rows, item_diets=None):
     """
-    Rows: (outlet_name, category_name, item_name, ingredients, allergens, item_id)
-    Returns { "sections": [ { "title", "categories": [ { "name", "items" } ] } ] }
+    Rows: (outlet_name, category, subcategory, item_name, ingredients, allergens, item_id)
+
+    Returns { "sections": [ ... ] }, where a section carries either
+    "categories": [ { "name", "items" } ] for the usual one level of grouping,
+    or "subsections": [ { "title", "categories": [...] } ] when the outlet has
+    subcategories -- only Felicita's, whose tabs nest two deep.
     """
     if item_diets is None:
         item_diets = {}
     tree = OrderedDict()
     for r in rows:
-        outlet_name, category_name, item_name = r[0], r[1], r[2]
-        ingredients, allergens = (r[3] or "").strip(), (r[4] or "").strip()
-        item_id = r[5] if len(r) > 5 else None
-        if outlet_name not in tree:
-            tree[outlet_name] = OrderedDict()
-        if category_name not in tree[outlet_name]:
-            tree[outlet_name][category_name] = []
+        outlet_name, category, subcategory, item_name = r[0], r[1], r[2] or "", r[3]
+        ingredients, allergens = (r[4] or "").strip(), (r[5] or "").strip()
+        item_id = r[6] if len(r) > 6 else None
+        categories = tree.setdefault(outlet_name, OrderedDict())
         entry = {"name": item_name}
         if ingredients:
             entry["description"] = ingredients
@@ -56,19 +57,36 @@ def build_menu_sections_from_rows(rows, item_diets=None):
             entry["allergens"] = allergens
         if item_id and item_id in item_diets:
             entry["dietaryRestrictions"] = item_diets[item_id]
-        tree[outlet_name][category_name].append(entry)
+        categories.setdefault(category, OrderedDict()).setdefault(subcategory, []).append(entry)
 
     sections = []
     for outlet_name, categories in tree.items():
-        sections.append(
-            {
+        nested = any(sub for subs in categories.values() for sub in subs)
+        if nested:
+            # Categories without their own subcategories still need an inner
+            # accordion, so they repeat their name rather than showing a blank one.
+            sections.append({
+                "title": outlet_name,
+                "subsections": [
+                    {
+                        "title": category,
+                        "categories": [
+                            {"name": subcategory or category, "items": items}
+                            for subcategory, items in subs.items()
+                        ],
+                    }
+                    for category, subs in categories.items()
+                ],
+            })
+        else:
+            sections.append({
                 "title": outlet_name,
                 "categories": [
-                    {"name": cat_name, "items": items}
-                    for cat_name, items in categories.items()
+                    {"name": category, "items": items}
+                    for category, subs in categories.items()
+                    for items in subs.values()
                 ],
-            }
-        )
+            })
     return {"sections": sections}
 
 
@@ -146,6 +164,7 @@ def load_stores(today):
                 food_outlets.c.building_id,
                 food_outlets.c.name,
                 menu_items.c.category,
+                menu_items.c.subcategory,
                 menu_items.c.name,
                 menu_items.c.ingredients,
                 menu_items.c.allergens,
@@ -155,7 +174,7 @@ def load_stores(today):
             .order_by(food_outlets.c.building_id, food_outlets.c.id, menu_items.c.id)
         ).fetchall()
 
-        item_diets = load_item_diets(conn, [row[6] for row in item_rows])
+        item_diets = load_item_diets(conn, [row[7] for row in item_rows])
 
     outlets_by_building = defaultdict(list)
     for outlet_id, building_id in outlet_rows:
@@ -167,10 +186,8 @@ def load_stores(today):
     }
 
     rows_by_building = defaultdict(list)
-    for building_id, outlet_name, category, name, ingredients, allergens, item_id in item_rows:
-        rows_by_building[building_id].append(
-            (outlet_name, category, name, ingredients, allergens, item_id)
-        )
+    for building_id, *menu_row in item_rows:
+        rows_by_building[building_id].append(tuple(menu_row))
 
     stores = []
     for b_id, b_name, b_location, b_lat, b_lng, b_image in building_rows:
@@ -182,7 +199,7 @@ def load_stores(today):
 
         menu_rows = rows_by_building.get(b_id, [])
         diets = sorted({
-            diet for row in menu_rows for diet in item_diets.get(row[5], [])
+            diet for row in menu_rows for diet in item_diets.get(row[6], [])
         })
 
         has_coords = b_lng is not None and b_lat is not None

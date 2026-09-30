@@ -598,8 +598,10 @@ def db_um():
 
                     clear_outlet_menu_items(conn, outlet_id)
                     if "felicita" in outlet_name.lower():
-                        # Felicita's publishes tabs (Daily Features, Drinks, Burgers...)
-                        # which flatten into "Tab - Heading" categories on the one outlet.
+                        # Felicita's publishes nested tabs (Drinks > Wine, Daily
+                        # Features > Monday). The tab becomes the category and the
+                        # heading inside it the subcategory, which the UI renders as
+                        # a two-level accordion.
                         try:
                             felicitas_data = scrape_felicitas_menu()
                         except Exception as e:
@@ -607,9 +609,14 @@ def db_um():
                             felicitas_data = {}
                         for tab_name, tab_categories in felicitas_data.items():
                             for cat_name, items in tab_categories.items():
-                                category = cat_name if cat_name == tab_name else f"{tab_name} - {cat_name}"
+                                # A tab with no headings repeats its own name; that is
+                                # one level, not two.
+                                subcategory = "" if cat_name == tab_name else cat_name
                                 for item in items:
-                                    process_menu_item(conn, outlet_id, category, item["name"], item)
+                                    process_menu_item(
+                                        conn, outlet_id, tab_name, item["name"], item,
+                                        subcategory=subcategory,
+                                    )
                     else:
                         sub_menu_data = SUB_MENUS.get(outlet_name, {})
                         for cat_name, items in sub_menu_data.get("categories", {}).items():
@@ -676,33 +683,29 @@ def iter_leaf_menu_items(menu_dict):
                 yield item_name, details
 
 
-def process_menu_item(conn, outlet_id, category, item_name, details):
+def process_menu_item(conn, outlet_id, category, item_name, details, subcategory=""):
     new_ingredients = details.get("ingredients") or ""
     new_allergens = details.get("allergens") or ""
 
-    item_id = conn.execute(
-        select(menu_items.c.id).where(
-            (menu_items.c.outlet_id == outlet_id)
-            & (menu_items.c.category == category)
-            & (menu_items.c.name == item_name)
-        )
-    ).scalar()
+    identity = (
+        (menu_items.c.outlet_id == outlet_id)
+        & (menu_items.c.category == category)
+        & (menu_items.c.subcategory == subcategory)
+        & (menu_items.c.name == item_name)
+    )
+
+    item_id = conn.execute(select(menu_items.c.id).where(identity)).scalar()
 
     if not item_id:
         conn.execute(menu_items.insert().values(
             outlet_id=outlet_id,
             category=category,
+            subcategory=subcategory,
             name=item_name,
             ingredients=new_ingredients,
             allergens=new_allergens
         ))
-        item_id = conn.execute(
-            select(menu_items.c.id).where(
-                (menu_items.c.outlet_id == outlet_id)
-                & (menu_items.c.category == category)
-                & (menu_items.c.name == item_name)
-            )
-        ).scalar()
+        item_id = conn.execute(select(menu_items.c.id).where(identity)).scalar()
     else:
         existing_row = conn.execute(
             select(menu_items.c.ingredients, menu_items.c.allergens).where(
