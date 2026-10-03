@@ -66,7 +66,8 @@ const MaximizedCards = ({ store, onClose }) => {
 
   if (!store) return null;
 
-  const isSub = store.location === "The Sub";
+  // The SUB's image is a logo rather than a photo, so it needs contain-fit.
+  const isSub = store.name === "The SUB";
   const diets = (store.supportedDiets || []).filter(Boolean);
   const menuData = useMemo(() => normalizeMenuMenu(store.menu), [store.menu]);
   const menuSections = menuData.sections || [];

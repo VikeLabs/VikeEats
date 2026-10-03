@@ -25,41 +25,27 @@ def runner(app):
     return app.test_cli_runner()
 
 @pytest.fixture
-def mock_db(app):
-    """Fixture to provide a clean, temporary database for each test."""
-    test_db_path = 'test_vikeeats.db'
-    if os.path.exists(test_db_path):
-        try:
-            os.remove(test_db_path)
-        except PermissionError:
-            pass # Handle cases where it's still locked
-    
-    # Override DB_PATH in api.db
-    import api.db
-    original_db_path = api.db.DB_PATH
-    original_db_url = api.db.DB_URL
-    api.db.DB_PATH = test_db_path
-    api.db.DB_URL = f"sqlite:///{test_db_path}"
-    
+def mock_db(app, tmp_path):
+    """A clean, temporary database for each test.
+
+    Lives under pytest's tmp_path rather than the working directory, so a run
+    can no longer leave a test_vikeeats.db behind in the repo.
+    """
+    import api.config
+
+    db_file = tmp_path / "vikeeats_test.db"
+    original_url = api.config.DB_URL
+    api.config.set_db_url(f"sqlite:///{db_file.as_posix()}")
+
     # Initialize the database (create tables)
     from api.create_db import create_database
     create_database()
-    
-    engine = sa.create_engine(api.db.DB_URL)
-    yield engine
-    
-    # Restore original paths
-    api.db.DB_PATH = original_db_path
-    api.db.DB_URL = original_db_url
-    
-    # Cleanup after restore
-    if os.path.exists(test_db_path):
-        try:
-            # We need to dispose the engine to release the file lock
-            engine.dispose()
-            os.remove(test_db_path)
-        except:
-            pass
+
+    yield api.config.get_engine()
+
+    # Restoring disposes the test engine, releasing the file handle so pytest
+    # can clear tmp_path on Windows.
+    api.config.set_db_url(original_url)
 
 @pytest.fixture
 def mock_uvic_index():
