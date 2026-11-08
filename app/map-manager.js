@@ -29,7 +29,7 @@ const CARTO_SUBDOMAIN_URL =
 function createPositronBaseLayer() {
   return new TileLayer({
     source: new XYZ({
-      url: `${CARTO_SUBDOMAIN_URL}/rastertiles/voyager_nolabels/{z}/{x}/{y}.png`,
+      url: `${CARTO_SUBDOMAIN_URL}/rastertiles/voyager_nolabels/{z}/{x}/{y}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`,
       attributions: CARTO_ATTRIBUTION,
       maxZoom: 20,
       crossOrigin: "anonymous",
@@ -41,7 +41,7 @@ function createPositronBaseLayer() {
 function createPositronLabelsLayer() {
   return new TileLayer({
     source: new XYZ({
-      url: `${CARTO_SUBDOMAIN_URL}/rastertiles/voyager_only_labels/{z}/{x}/{y}.png`,
+      url: `${CARTO_SUBDOMAIN_URL}/rastertiles/voyager_only_labels/{z}/{x}/{y}.png?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}`,
       maxZoom: 20,
       crossOrigin: "anonymous",
     }),
