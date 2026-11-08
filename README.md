@@ -69,6 +69,13 @@ You can clone & deploy it to Vercel with one click:
     ```
     This creates the initial `vikeeats.db` file required for the application.
 
+### Map API Key
+The map tiles come from CARTO, which requires a free API key. Get one at [https://carto.com/basemaps/apikey/](https://carto.com/basemaps/apikey/), then create a `.env.local` file in the project root:
+```
+NEXT_PUBLIC_CARTO_API_KEY=your_key_here
+```
+Restart the dev server after adding it. Without a key, the map shows "API KEY REQUIRED" tiles.
+
 ### Running the Full Application
 ```bash
 npm install
